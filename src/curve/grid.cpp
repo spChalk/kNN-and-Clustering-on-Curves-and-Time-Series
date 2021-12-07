@@ -6,9 +6,9 @@ using std::get;
 
 Grid::Grid(uint32_t _grid_interval, uint32_t dimensions):
 grid_interval(_grid_interval), noise(new vector<double>()) {
-    initialize_noise(dimensions);
+   //initialize_noise(dimensions);
 }
-
+/*
 void Grid::fit(Curve &curve) {
     map_to_grid(curve);
     remove_consecutive_duplicates(curve);
@@ -48,4 +48,4 @@ void Grid::snap(vector<double> *_vector, uint32_t interval) {
 void Grid::map_to_grid(Curve &curve) {
     for(auto &_point: *curve.getData())
         snap(_point->get_coordinates(), grid_interval);
-}
+}*/

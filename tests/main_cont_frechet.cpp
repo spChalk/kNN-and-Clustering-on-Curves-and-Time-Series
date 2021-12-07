@@ -1,15 +1,15 @@
-#include "../src/curve/curve.hpp"
+#include "../src/util/dataset/dataset.hpp"
 
 int main(int argc, char const *argv[]) {
 
     std::string path = "../data/testdata.txt";
-    auto curve = Curve(path);
+    auto dataset = Dataset(path);
 
-    curve.filter(25.0);
-    curve.erase_time_axis();
-    curve.fit_to_grids(10, 1);
-
-    curve.print();
+    /*dataset.filter(25.0);
+    dataset.erase_time_axis();
+    dataset.fit_to_grids(10, 1);
+*/
+    dataset.print();
     return 0;
 }
 

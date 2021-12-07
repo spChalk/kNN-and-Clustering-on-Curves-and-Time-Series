@@ -7,23 +7,23 @@ using std::get;
 using std::cout;
 
 Dataset::Dataset(std::string & data_path)
-: data(file_reader(data_path)) {}
+: curves(file_reader(data_path)) {}
 
 Dataset::~Dataset() {
-    for(auto & i : *data)
+    for(auto & i : *curves)
         delete i;
-    delete data;
+    delete curves;
 }
 
-std::vector<Point *> *Dataset::getData() const {
-    return data;
-}
-
-uint32_t Dataset::get_data_dimensions() {
-  auto first_point = (*data)[0];
-  return first_point->get_dimensions();
+std::vector<Curve *> *Dataset::getData() const {
+    return curves;
 }
 
 uint32_t Dataset::size() {
-    return data->size();
+    return curves->size();
+}
+
+void Dataset::print() {
+    for(auto & curve: *curves)
+        curve->print();
 }

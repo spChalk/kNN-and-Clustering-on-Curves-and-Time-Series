@@ -23,7 +23,7 @@ radius(_radius) {
     uint32_t window = estimate_window_size(data, this->distance);
 
     // Get the dimension of the data, by accessing a datapoint
-    uint32_t dim = (*(*data)[0]).dimensions;
+    uint32_t dim = (*(*data)[0]).get_dimensions();
 
     for(uint32_t i = 0; i < num_ht; i++) {
         /* Automatically scale the size of the Hash family's tables by computing:

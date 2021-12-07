@@ -370,7 +370,7 @@ double cluster::update() {
         auto points = centroid_family.second;
 
         // Initialize an array of zeros
-        auto result = new vector<double>(centroid->dimensions, 0.0);
+        auto result = new vector<double>(centroid->get_dimensions(), 0.0);
         // Compute the mean of all points in the current centroid
         for(auto & _point: *points) {
             vector<double> temp = *(_point->get_coordinates());

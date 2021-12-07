@@ -1,13 +1,4 @@
 
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <list>
-#include <tuple>
-#include <unordered_set>
-#include <unordered_map>
-#include <iomanip>
 #include "file_reader.hpp"
 
 using std::endl;
@@ -27,11 +18,22 @@ using std::ofstream;
 using std::ostringstream;
 using std::runtime_error;
 
+vector<Point *> *zip_with_time_axis(std::vector<double> &y_values) {
+
+    auto curve = new vector<Point *>();
+    double i = 1;
+    for(auto & value: y_values) {
+        auto new_vector = vector<double>{i++, value};
+        curve->push_back(new Point( new_vector ));
+    }
+    return curve;
+}
+
 /*
  *  Reads a line representing a vector in 'd' dimensions and returns
  *  a tuple: (point's ID, vector of doubles).
  */
-static Point *vector_builder(unordered_set<string> &set, const string& input) {
+static Curve *curve_builder(unordered_set<string> &set, const string& input) {
 
     istringstream iss(input);
     string token;
@@ -51,39 +53,39 @@ static Point *vector_builder(unordered_set<string> &set, const string& input) {
     }
 
     // Build the tuple and insert its unique ID
-    std::vector<double> coord;
+    std::vector<double> y_values;
     std::string id = token.c_str();
 
     // Read the rest coordinates
     while(getline(iss, token, '\t')) {
         if(token == "\r") break;
-        coord.push_back(stod(token, nullptr));
+        y_values.push_back(stod(token, nullptr));
     }
 
-    return new Point(id, coord);
+    return new Curve(id, zip_with_time_axis(y_values));
 }
 
-static vector<Point *> *extract_data(ifstream &file) {
+static vector<Curve *> *extract_data(ifstream &file) {
 
     // Initialize data
-    auto *data = new vector<Point *>();
+    auto *curves = new vector<Curve *>();
     auto set = unordered_set<string>();
 
     // Push every point in the vector
     string line;
     while(getline(file, line)) {
         if(line.empty()) break;
-        data->push_back(vector_builder(set, line));
+        curves->push_back(curve_builder(set, line));
     }
 
-    return data;
+    return curves;
 }
 
 /*
  *  Read the given "filename" and return a vector of points.
  *  Each point consists of a tuple: (point's ID, vector of doubles).
  */
-vector<Point *> *file_reader(const string& filename) {
+vector<Curve *> *file_reader(const string& filename) {
 
     ifstream f(filename.c_str());
     if (!f.good())
@@ -115,6 +117,7 @@ vector<Point *> *file_reader(const string& filename) {
     }
 }
 
+/*
 // Writes all info necessary for the output file
 void write_data_to_out_file(const string& query_id,
                             multimap<double, string> & lsh_data,
@@ -172,6 +175,7 @@ void write_data_to_out_file(const string& query_id,
         throw runtime_error(msg.str());
     }
 }
+*/
 
 void read_cluster_config_file(const string& filename, uint32_t *noc, uint32_t *noht,
                               uint32_t *nohf, uint32_t *mMh, uint32_t *nhd, uint32_t *nop) {

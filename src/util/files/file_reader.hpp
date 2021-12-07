@@ -2,16 +2,22 @@
 #ifndef PROJECT_1_FILE_READER_HPP
 #define PROJECT_1_FILE_READER_HPP
 
-#include "../dataset/dataset.hpp"
+#include <fstream>
+#include <iostream>
+#include <sstream>
 #include <vector>
 #include <list>
+#include <tuple>
+#include <unordered_set>
+#include <unordered_map>
 #include <map>
+#include "../../curve/curve.hpp"
 
 /*
  *  Read the given "filename" and return a vector of points.
  *  Each point consists of a tuple: (point's ID, vector of doubles).
  */
-std::vector<Point *> *file_reader(const std::string& filename);
+std::vector<Curve *> *file_reader(const std::string& filename);
 
 // Writes all info necessary for the output file
 void write_data_to_out_file(const std::string& query_id,

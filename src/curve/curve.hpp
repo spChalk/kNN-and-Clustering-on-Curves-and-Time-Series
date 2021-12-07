@@ -15,6 +15,7 @@ public:
     void erase_time_axis();
     void fit_to_grid(uint32_t grid_interval);
     void min_max_filter();
+    void apply_padding(uint32_t limit);
 
     std::string &get_id();
     std::vector<Point *> *get_points();

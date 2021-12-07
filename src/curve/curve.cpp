@@ -101,3 +101,10 @@ std::vector<double> *Curve::get_coordinates_of_point(uint32_t index) {
     assert (index < points->size());
     return (*points)[index]->get_coordinates();
 }
+
+void Curve::apply_padding(uint32_t limit) {
+    while(points->size() < limit) {
+        auto zero = vector<double>{0};
+        points->push_back(new Point(zero));
+    }
+}

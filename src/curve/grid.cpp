@@ -5,16 +5,16 @@ using std::vector;
 using std::get;
 
 Grid::Grid(uint32_t _grid_interval, uint32_t dimensions):
-grid_interval(_grid_interval), noise(new vector<double>()) {
+grid_interval(_grid_interval)/*, noise(new vector<double>())*/ {
    //initialize_noise(dimensions);
 }
-/*
+
 void Grid::fit(Curve &curve) {
     map_to_grid(curve);
-    remove_consecutive_duplicates(curve);
-    add_noise(curve);
+    //remove_consecutive_duplicates(curve);
+    //add_noise(curve);
 }
-
+/*
 void Grid::initialize_noise(uint32_t dimensions) {
     for(uint32_t i = 0; i < dimensions; i++)
         noise->push_back(Distributions::uniform<double>(0, this->grid_interval));
@@ -36,7 +36,7 @@ bool Grid::are_equal_consecutive_vectors(const std::vector<Point *> *curve_data,
                                         uint32_t index) const {
     return vectors_are_equal<double>((*curve_data)[index]->get_coordinates(), (*curve_data)[index + 1]->get_coordinates());
 }
-
+*/
 void Grid::snap(vector<double> *_vector, uint32_t interval) {
     // TODO: Maybe have a more generic approach where you apply a lambda to a vector
     divide_vector_by_scalar<double>(_vector, interval);
@@ -46,6 +46,6 @@ void Grid::snap(vector<double> *_vector, uint32_t interval) {
 }
 
 void Grid::map_to_grid(Curve &curve) {
-    for(auto &_point: *curve.getData())
+    for(auto &_point: *curve.get_points())
         snap(_point->get_coordinates(), grid_interval);
-}*/
+}

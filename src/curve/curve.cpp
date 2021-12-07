@@ -1,10 +1,11 @@
 
 #include "curve.hpp"
+#include "grid.hpp"
 
 using std::get;
 
 Curve::Curve(std::string _id, std::vector<Point *> *_points):
-id(_id), points(_points), curve_on_grids(nullptr) {}
+id(_id), points(_points) {}
 
 void Curve::filter(double pruning_threshold) {
 
@@ -40,10 +41,10 @@ void Curve::print() {
         point->print();
 }
 
-void Curve::fit_to_grids(uint32_t grid_interval, uint32_t grid_number) {
+void Curve::fit_to_grid(uint32_t grid_interval) {
 
-    //this->curve_on_grids =generate_grid_family(grid_interval, grid_number);
-
+    auto grid = Grid(grid_interval, get_data_dimensions());
+    grid.fit(*this);
     // TODO Apply padding to the resulting vectors
 }
 /*
@@ -54,7 +55,6 @@ vector<Curve *> *Curve::generate_grid_family(uint32_t grid_interval, uint32_t gr
     // "curve_on_grids" class structure
     // in order to avoid eternal loop
     for (int i = 0; i < grid_number; i++) {
-        //TODO CREATE COPY CONSTRUCTOR
         Curve *newCurve = new Curve(*this);
         Grid(grid_interval, get_data_dimensions()).fit(*newCurve);
         _curve_on_grids->push_back(newCurve);
@@ -66,4 +66,12 @@ Curve::~Curve() {
     for(auto & point: *points)
         delete point;
     delete points;
+}
+
+uint32_t Curve::get_data_dimensions() {
+    return points ? (*points)[0]->get_dimensions() : 0;
+}
+
+std::vector<Point *> *Curve::get_points() {
+    return points;
 }

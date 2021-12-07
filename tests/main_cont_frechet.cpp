@@ -5,10 +5,16 @@ int main(int argc, char const *argv[]) {
     std::string path = "../data/testdata.txt";
     auto dataset = Dataset(path);
 
-    /*dataset.filter(25.0);
-    dataset.erase_time_axis();
-    dataset.fit_to_grids(10, 1);
-*/
+    dataset.print();
+
+    for(auto & curve: *dataset.getData()) {
+        curve->filter(2);
+        curve->erase_time_axis();
+        curve->fit_to_grid(2);
+        // maxima minima
+        // padding
+    }
+
     dataset.print();
     return 0;
 }

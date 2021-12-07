@@ -11,7 +11,10 @@ int main(int argc, char const *argv[]) {
         curve->filter(2);
         curve->erase_time_axis();
         curve->fit_to_grid(2);
-        // maxima minima
+
+        dataset.print();
+
+        curve->min_max_filter();
         // padding
     }
 

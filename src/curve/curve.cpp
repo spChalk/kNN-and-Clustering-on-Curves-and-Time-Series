@@ -7,6 +7,10 @@ using std::get;
 Curve::Curve(std::string _id, std::vector<Point *> *_points):
 id(_id), points(_points) {}
 
+std::string &Curve::get_id() {
+    return this->id;
+}
+
 void Curve::filter(double pruning_threshold) {
 
     for(uint32_t i = 1; i < points->size(); i+=2)
@@ -42,10 +46,7 @@ void Curve::print() {
 }
 
 void Curve::fit_to_grid(uint32_t grid_interval) {
-
-    auto grid = Grid(grid_interval, get_data_dimensions());
-    grid.fit(*this);
-    // TODO Apply padding to the resulting vectors
+    Grid(grid_interval, get_data_dimensions()).fit(*this);
 }
 /*
 vector<Curve *> *Curve::generate_grid_family(uint32_t grid_interval, uint32_t grid_number) {
@@ -74,4 +75,29 @@ uint32_t Curve::get_data_dimensions() {
 
 std::vector<Point *> *Curve::get_points() {
     return points;
+}
+
+bool Curve::is_between_min_and_max(uint32_t index) {
+    if(index+1 >= points->size())
+        return false;
+
+    auto point_left = get_coordinates_of_point(index - 1)[0];
+    auto point_middle = get_coordinates_of_point(index)[0];
+    auto point_right = get_coordinates_of_point(index + 1)[0];
+
+    if(point_middle >= point_left && point_middle <= point_right ||
+        point_middle <= point_left && point_middle >= point_right)
+        return true;
+    return false;
+}
+
+void Curve::min_max_filter() {
+    for(uint32_t i = 1; i < points->size(); i+=2)
+        while(is_between_min_and_max(i))
+            prune_point_on_index(i);
+}
+
+std::vector<double> *Curve::get_coordinates_of_point(uint32_t index) {
+    assert (index < points->size());
+    return (*points)[index]->get_coordinates();
 }

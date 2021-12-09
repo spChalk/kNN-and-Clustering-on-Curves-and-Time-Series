@@ -1,4 +1,4 @@
-
+#include "../util/metrics/metrics.hpp"
 #include "curve.hpp"
 #include "grid.hpp"
 

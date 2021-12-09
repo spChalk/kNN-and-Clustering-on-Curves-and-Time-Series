@@ -3,7 +3,9 @@
 
 #include <tuple>
 #include <iostream>
-#include "../util/metrics/metrics.hpp"
+// #include "../util/metrics/metrics.hpp" // ?? Harry: commented this out to avoid possible circular includes
+#include "./point.hpp"
+
 
 class Curve {
 

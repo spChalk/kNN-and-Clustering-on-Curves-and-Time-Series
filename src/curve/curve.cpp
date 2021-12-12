@@ -108,3 +108,14 @@ void Curve::apply_padding(uint32_t limit) {
         points->push_back(new Point(zero));
     }
 }
+
+_Curve *Curve::to_FredCurve() {
+
+    _Curve *fredCurve = new _Curve(Points(points->size(), get_data_dimensions()));
+    for (uint32_t i = 0; i < fredCurve->size(); i++) {
+        for (uint32_t j = 0; j < fredCurve->operator[](i).dimensions(); j++) {
+            fredCurve->operator[](i).set(j, (*(*points)[i]->get_coordinates())[j]);
+        }
+    }
+    return fredCurve;
+}

@@ -9,8 +9,8 @@ class Metrics {
 
 public:
     static double euclidean(Point &a, Point &b);
-    static double frechet_distance(Curve &c1, Curve &c2);
-    // static cont_frechet
+    static double discrete_frechet_distance(Curve &c1, Curve &c2);
+    static double continuous_frechet_distance(Curve &c1, Curve &c2);
 };
 
 #endif //PROJECT_1_METRICS_HPP

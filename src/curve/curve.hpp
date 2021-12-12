@@ -5,6 +5,7 @@
 #include <iostream>
 // #include "../util/metrics/metrics.hpp" // ?? Harry: commented this out to avoid possible circular includes
 #include "./point.hpp"
+#include "../../cont_frechet_repo/Fred/include/curve.hpp"
 
 
 class Curve {
@@ -27,6 +28,9 @@ public:
 
     // TODO REMOVE WHEN READY
     void print();
+    uint32_t get_data_dimensions();
+
+    _Curve *to_FredCurve();
 
 private:
     std::string id;
@@ -37,7 +41,6 @@ private:
     void prune_point_on_index(uint32_t index);
     void remove_first_value_of(Point *_tuple);
     bool is_between_min_and_max(uint32_t index);
-    uint32_t get_data_dimensions();
 };
 
 #endif //PROJECT_1_CURVE_HPP

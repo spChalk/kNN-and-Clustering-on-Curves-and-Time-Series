@@ -1,5 +1,6 @@
 
 #include "metrics.hpp"
+#include "../../../cont_frechet_repo/Fred/include/frechet.hpp"
 
 #include <iostream>
 #include <iosfwd>
@@ -26,7 +27,7 @@ double Metrics::euclidean(Point &a, Point &b) {
 }
 
 // TODO: well, gotta test this...
-double Metrics::frechet_distance(Curve &c1, Curve &c2)
+double Metrics::discrete_frechet_distance(Curve &c1, Curve &c2)
 {
     auto &a = *c1.get_points();
     auto &b = *c2.get_points();
@@ -61,4 +62,12 @@ double Metrics::frechet_distance(Curve &c1, Curve &c2)
     double ret_val = opt[m1 * m2 - 1];
     delete[] opt;
     return ret_val;
+}
+
+double Metrics::continuous_frechet_distance(Curve &c1, Curve &c2) {
+    _Curve *fc1 = c1.to_FredCurve();
+    _Curve *fc2 = c2.to_FredCurve();
+    auto result = Frechet::Continuous::distance(*fc1, *fc2).value;
+    delete fc1; delete fc2;
+    return result;
 }

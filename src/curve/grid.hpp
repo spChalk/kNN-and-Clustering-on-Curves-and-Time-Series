@@ -9,7 +9,7 @@ class Grid {
 
 private:
     uint32_t grid_interval;
-    //std::vector<double> *noise;
+    double noise;
 
     //void initialize_noise(uint32_t dimensions);
     void map_to_grid(Curve &curve);

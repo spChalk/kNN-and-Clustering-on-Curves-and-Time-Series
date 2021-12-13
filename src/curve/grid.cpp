@@ -5,7 +5,7 @@ using std::vector;
 using std::get;
 
 Grid::Grid(uint32_t _grid_interval, uint32_t dimensions):
-grid_interval(_grid_interval)/*, noise(new vector<double>())*/ {
+grid_interval(_grid_interval), noise(Distributions::uniform<double>(0, _grid_interval)) {
    //initialize_noise(dimensions);
 }
 
@@ -38,11 +38,13 @@ bool Grid::are_equal_consecutive_vectors(const std::vector<Point *> *curve_data,
 }
 */
 void Grid::snap(vector<double> *_vector, uint32_t interval) {
-    // TODO: Maybe have a more generic approach where you apply a lambda to a vector
+    // TODO: Maybe overload operators in order to simplify this circus below
+    subtract_scalar_from_vector<double>(_vector, noise);
     divide_vector_by_scalar<double>(_vector, interval);
     add_scalar_to_vector<double>(_vector, 0.5);
     apply_floor_to_vector(_vector);
     multiply_vector_by_scalar<double>(_vector, interval);
+    add_scalar_to_vector<double>(_vector, noise);
 }
 
 void Grid::map_to_grid(Curve &curve) {

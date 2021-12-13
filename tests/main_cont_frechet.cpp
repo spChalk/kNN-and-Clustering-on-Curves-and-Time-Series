@@ -1,20 +1,25 @@
 #include "../src/util/dataset/dataset.hpp"
 #include "../src/lsh/lsh.hpp"
 #include "../src/util/metrics/metrics.hpp"
+#include "../src/util/utilities.hpp"
 
 int main(int argc, char const *argv[]) {
 
-    std::string path = "../data/nasd_input_small.csv";
-    auto dataset = Dataset(path);
+    std::string input_path = "../data/nasd_input_small.csv";
+    std::string query_path = "../data/nasd_query.csv";
+    auto dataset = Dataset(input_path);
+    auto queries = Dataset(query_path);
+
+    uint32_t grid_interval = estimate_grid_interval(dataset, queries);
+    uint32_t max_curve_length = compute_max_curve_length(dataset, queries);
 
     for(auto & curve: *dataset.getData()) {
         curve->filter(2);
         curve->erase_time_axis();
-        //TODO: δ must be computed automatically
-        curve->fit_to_grid(2);
+        curve->fit_to_grid(grid_interval);
         curve->min_max_filter();
         //TODO: see if padding num is good (put INT16_MAX for testing)
-        curve->apply_padding(500);
+        curve->apply_padding(max_curve_length);
     }
 
     auto lsh_data = dataset.flatten_data();

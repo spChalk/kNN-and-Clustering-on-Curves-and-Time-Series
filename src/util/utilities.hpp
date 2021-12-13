@@ -57,6 +57,12 @@ void add_scalar_to_vector(vector<T> *v, double scalar) {
 }
 
 template<typename T>
+void subtract_scalar_from_vector(vector<T> *v, double scalar) {
+    for(uint32_t i = 0; i < v->size(); i++)
+        v->data()[i] = v->data()[i] - scalar;
+}
+
+template<typename T>
 void add_vectors(vector<T> *a, vector<T> *b, vector<T> *result) {
 
     if(a->size() != b->size() || result->size() != a->size()) {
@@ -107,6 +113,12 @@ double dot_product(vector<T> *a, vector<T> *b) {
  * a subset (1%) of data.
  */
 uint32_t estimate_window_size(vector<FlattenedCurve *> *data, double(*distance)(FlattenedCurve&, FlattenedCurve&));
+
+double avg_point_size_of_dataset(Dataset &set);
+uint32_t estimate_grid_interval(Dataset &input, Dataset &query);
+
+uint32_t compute_max_curve_length(Dataset &input, Dataset &query);
+uint32_t compute_max_curve_length_(Dataset &set);
 
 // Modulo operation between two numbers
 uint32_t mod(long a, uint32_t b);

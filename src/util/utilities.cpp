@@ -34,6 +34,43 @@ uint32_t estimate_window_size(vector<FlattenedCurve *> *data, double(*distance)(
     return (uint32_t)(dist * (1.0 / subset));
 }
 
+double avg_point_size_of_dataset(Dataset &set) {
+    double avg_size = 0;
+    for(auto &curve: *set.getData())
+        avg_size += ((double)curve->get_points()->size() / set.size());
+    return avg_size;
+}
+
+/*
+ * Compute the average points of all curves in the input dataset and in the query dataset separately.
+ * Return approx. 4 * data dimensions * minimum of the 2 above averages.
+ */
+uint32_t estimate_grid_interval(Dataset &input, Dataset &query) {
+
+    uint32_t dimensions = (*input.getData())[0]->get_data_dimensions();
+    double avg_input_distances = avg_point_size_of_dataset(input);
+    double avg_query_distances = avg_point_size_of_dataset(query);
+
+    auto result = (uint32_t)std::max(avg_input_distances, avg_query_distances);
+    return 4 * dimensions * result;
+}
+
+uint32_t compute_max_curve_length_(Dataset &set) {
+    uint32_t max_size = 0;
+    for(auto &curve: *set.getData()) {
+        if (curve->get_points()->size() > max_size) {
+            max_size = curve->get_points()->size();
+        }
+    }
+    return max_size;
+}
+
+uint32_t compute_max_curve_length(Dataset &input, Dataset &query) {
+    uint32_t max_input_curve_len = compute_max_curve_length_(input);
+    uint32_t max_query_curve_len = compute_max_curve_length_(query);
+    return (uint32_t)std::max(max_input_curve_len, max_query_curve_len);
+}
+
 // Modulo operation between two numbers
 uint32_t mod(long a, uint32_t b) {
     long c = a % b;

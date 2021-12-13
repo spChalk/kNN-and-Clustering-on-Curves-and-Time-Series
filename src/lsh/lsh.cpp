@@ -14,7 +14,7 @@ using std::list;
 using std::string;
 using std::get;
 
-LSH::LSH(vector<Point *> *data, distance_f _distance, uint32_t num_ht, uint32_t num_hfs,
+LSH::LSH(vector<FlattenedCurve *> *data, distance_f _distance, uint32_t num_ht, uint32_t num_hfs,
          uint32_t _k_nearest, double _radius)
 : maps(new vector< hashtable *>()), distance(_distance), k_nearest_n(_k_nearest),
 radius(_radius) {
@@ -23,7 +23,7 @@ radius(_radius) {
     uint32_t window = estimate_window_size(data, this->distance);
 
     // Get the dimension of the data, by accessing a datapoint
-    uint32_t dim = (*(*data)[0]).get_dimensions();
+    uint32_t dim = (*(*data)[0]).get_size();
 
     for(uint32_t i = 0; i < num_ht; i++) {
         /* Automatically scale the size of the Hash family's tables by computing:
@@ -50,14 +50,14 @@ LSH::~LSH() {
  *  2) Run all points to all amplified hfs
  *  3) Result is L hash tables, each one including all points
  */
-void LSH::load(vector<Point *> *data) {
+void LSH::load(vector<FlattenedCurve *> *data) {
     for(auto & map : *this->maps)
         for(auto pair: *data)
             map->insert(pair);
 }
 
 // Run K Nearest Neighbours
-void LSH::knn(Point *query, multimap<double, string>& results) {
+void LSH::knn(FlattenedCurve *query, multimap<double, string>& results) {
 
     // Save computed distances
     auto dist_cache = unordered_map<string, double>();
@@ -72,7 +72,7 @@ void LSH::knn(Point *query, multimap<double, string>& results) {
         for(auto & it : *hashbucket) {
 
             uint32_t identity = get<0>(*it);
-            Point *p = get<1>(*it);
+            FlattenedCurve *p = get<1>(*it);
             string label = p->get_id();
 
             /* Check for distances, iff item's key is equal to query's amplified hf value */
@@ -96,7 +96,7 @@ void LSH::knn(Point *query, multimap<double, string>& results) {
 }
 
 // Run Range-search
-void LSH::range_search(Point *query, list<tuple<Point *, double>> &results) {
+void LSH::range_search(FlattenedCurve *query, list<tuple<FlattenedCurve *, double>> &results) {
 
     // Save computed distances
     auto dist_cache = unordered_map<string, double>();
@@ -111,7 +111,7 @@ void LSH::range_search(Point *query, list<tuple<Point *, double>> &results) {
         for(auto & it : *hashbucket) {
 
             uint32_t identity = get<0>(*it);
-            Point *p = get<1>(*it);
+            FlattenedCurve *p = get<1>(*it);
             string label = p->get_id();
 
             /* Check for distances, iff items key is equal to query's amplified hf value */

@@ -21,6 +21,7 @@ public:
 
     ~Dataset();
     std::vector<Curve *> *getData() const;
+    std::vector<FlattenedCurve *> *flatten_data();
     uint32_t size();
 
     // TODO REMOVE IT LATER

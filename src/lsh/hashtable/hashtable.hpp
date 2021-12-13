@@ -11,7 +11,7 @@ using std::vector;
 using std::tuple;
 using std::string;
 
-typedef vector< tuple<uint32_t , Point *> *> bucket;
+typedef vector< tuple<uint32_t , FlattenedCurve *> *> bucket;
 
 /*
  * Custom constant size hash table implemented with separate chaining
@@ -25,8 +25,8 @@ private:
 public:
     hashtable(uint32_t size, amplified_hf *hf);
     virtual ~hashtable();
-    void insert(Point *);
-    uint32_t hash(Point *);
+    void insert(FlattenedCurve *);
+    uint32_t hash(FlattenedCurve *);
     uint32_t get_tablesize();
     bucket *get_bucket(uint32_t);
 };

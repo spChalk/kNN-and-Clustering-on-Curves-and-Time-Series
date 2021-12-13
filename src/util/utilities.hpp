@@ -106,7 +106,7 @@ double dot_product(vector<T> *a, vector<T> *b) {
  * Because this app handles big data, the average distance is being computed between
  * a subset (1%) of data.
  */
-uint32_t estimate_window_size(vector<Point *> *data, double(*distance)(Point&, Point&));
+uint32_t estimate_window_size(vector<FlattenedCurve *> *data, double(*distance)(FlattenedCurve&, FlattenedCurve&));
 
 // Modulo operation between two numbers
 uint32_t mod(long a, uint32_t b);

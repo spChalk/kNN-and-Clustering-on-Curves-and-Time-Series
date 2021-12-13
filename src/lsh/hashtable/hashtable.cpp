@@ -25,14 +25,14 @@ hashtable::~hashtable() {
     delete table;
 }
 
-void hashtable::insert(Point *new_point) {
+void hashtable::insert(FlattenedCurve *new_point) {
 
     uint32_t id = this->hash(new_point);
     uint32_t index = id % this->table->size();
-    (*this->table)[index]->push_back(new tuple<uint32_t, Point *>(id, new_point));
+    (*this->table)[index]->push_back(new tuple<uint32_t, FlattenedCurve *>(id, new_point));
 }
 
-uint32_t hashtable::hash(Point *new_point) {
+uint32_t hashtable::hash(FlattenedCurve *new_point) {
     return this->hashfunction->hash(new_point->get_coordinates());
 }
 

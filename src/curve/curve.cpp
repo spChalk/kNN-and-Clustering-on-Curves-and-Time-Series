@@ -119,3 +119,39 @@ _Curve *Curve::to_FredCurve() {
     }
     return fredCurve;
 }
+
+FlattenedCurve *Curve::flatten() {
+    return new FlattenedCurve(*this);
+}
+
+FlattenedCurve::FlattenedCurve(Curve &normal_curve)
+: id(normal_curve.get_id()), points(new vector<double>()) {
+    for(auto &point: *normal_curve.get_points()) {
+        for(auto &coord: *point->get_coordinates()) {
+            points->push_back(coord);
+        }
+    }
+}
+
+FlattenedCurve::~FlattenedCurve() {
+    delete points;
+}
+
+std::string FlattenedCurve::get_id() {
+    return id;
+}
+
+std::vector<double> *FlattenedCurve::get_coordinates() {
+    return points;
+}
+
+uint32_t FlattenedCurve::get_size() {
+    return points->size();
+}
+
+_Curve *FlattenedCurve::to_FredCurve() {
+    _Curve *fredCurve = new _Curve(Points(points->size(), 1));
+    for (uint32_t i = 0; i < fredCurve->size(); i++)
+        fredCurve->operator[](i).set(0, (*points)[i]);
+    return fredCurve;
+}

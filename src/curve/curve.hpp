@@ -7,7 +7,7 @@
 #include "./point.hpp"
 #include "../../cont_frechet_repo/Fred/include/curve.hpp"
 
-
+class FlattenedCurve;
 class Curve {
 
 public:
@@ -31,6 +31,7 @@ public:
     uint32_t get_data_dimensions();
 
     _Curve *to_FredCurve();
+    FlattenedCurve *flatten();
 
 private:
     std::string id;
@@ -41,6 +42,25 @@ private:
     void prune_point_on_index(uint32_t index);
     void remove_first_value_of(Point *_tuple);
     bool is_between_min_and_max(uint32_t index);
+};
+
+class FlattenedCurve {
+private:
+    std::string id;
+    std::vector<double> *points;
+
+public:
+    FlattenedCurve(Curve &normal_curve);
+    FlattenedCurve(std::string _id, std::vector<double> &_coord)
+            : id(_id), points(new std::vector<double>(_coord)) {}
+
+    ~FlattenedCurve();
+
+    std::string get_id();
+    std::vector<double> *get_coordinates();
+    uint32_t get_size();
+
+    _Curve *to_FredCurve();
 };
 
 #endif //PROJECT_1_CURVE_HPP

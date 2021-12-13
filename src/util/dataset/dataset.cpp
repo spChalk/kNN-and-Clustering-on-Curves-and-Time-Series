@@ -27,3 +27,10 @@ void Dataset::print() {
     for(auto & curve: *curves)
         curve->print();
 }
+
+std::vector<FlattenedCurve *> *Dataset::flatten_data() {
+    auto fl_data = new std::vector<FlattenedCurve *>();
+    for(auto &curve: *getData())
+        fl_data->push_back(curve->flatten());
+    return fl_data;
+}

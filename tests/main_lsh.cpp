@@ -28,7 +28,7 @@ using std::runtime_error;
 int main(int argc, char const *argv[]) {
 
     // Default parameters
-    uint32_t num_hf = 4;            // Number of hash functions in each Hash family
+/*    uint32_t num_hf = 4;            // Number of hash functions in each Hash family
     uint32_t num_ht = 5;            // Number of hash tables
     uint32_t num_of_nearest_n = 1;  // Number of nearest neighbours to find
     uint32_t radius = 10000;        // Find neighbours inside a radius
@@ -102,5 +102,5 @@ int main(int argc, char const *argv[]) {
     } while ((repeat = ask_user_to_repeat()));
 
     cout << "\nGoodbye!" << endl;
-    return 0;
+    return 0;*/
 }

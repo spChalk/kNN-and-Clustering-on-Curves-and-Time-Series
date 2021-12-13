@@ -71,3 +71,11 @@ double Metrics::continuous_frechet_distance(Curve &c1, Curve &c2) {
     delete fc1; delete fc2;
     return result;
 }
+
+double Metrics::continuous_frechet_distance(FlattenedCurve &c1, FlattenedCurve &c2) {
+    _Curve *fc1 = c1.to_FredCurve();
+    _Curve *fc2 = c2.to_FredCurve();
+    auto result = Frechet::Continuous::distance(*fc1, *fc2).value;
+    delete fc1; delete fc2;
+    return result;
+}

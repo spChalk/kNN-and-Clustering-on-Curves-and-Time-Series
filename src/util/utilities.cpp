@@ -15,7 +15,7 @@ using std::get;
  * Because this app handles big data, the average distance is being computed between
  * a subset (1%) of data.
  */
-uint32_t estimate_window_size(vector<Point *> *data, double(*distance)(Point&, Point&)) {
+uint32_t estimate_window_size(vector<FlattenedCurve *> *data, double(*distance)(FlattenedCurve&, FlattenedCurve&)) {
 
     // Shuffle data
     uint32_t data_size = data->size();

@@ -34,3 +34,4 @@ std::vector<FlattenedCurve *> *Dataset::flatten_data() {
         fl_data->push_back(curve->flatten());
     return fl_data;
 }
+

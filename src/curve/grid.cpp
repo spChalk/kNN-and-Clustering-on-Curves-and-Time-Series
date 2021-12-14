@@ -4,8 +4,8 @@
 using std::vector;
 using std::get;
 
-Grid::Grid(uint32_t _grid_interval, uint32_t dimensions):
-grid_interval(_grid_interval), noise(Distributions::uniform<double>(0, _grid_interval)) {
+Grid::Grid(double _grid_interval, uint32_t dimensions):
+grid_interval(_grid_interval), noise(Distributions::uniform<double>(0, (long)_grid_interval)) {
    //initialize_noise(dimensions);
 }
 
@@ -37,7 +37,7 @@ bool Grid::are_equal_consecutive_vectors(const std::vector<Point *> *curve_data,
     return vectors_are_equal<double>((*curve_data)[index]->get_coordinates(), (*curve_data)[index + 1]->get_coordinates());
 }
 */
-void Grid::snap(vector<double> *_vector, uint32_t interval) {
+void Grid::snap(vector<double> *_vector, double interval) {
     // TODO: Maybe overload operators in order to simplify this circus below
     subtract_scalar_from_vector<double>(_vector, noise);
     divide_vector_by_scalar<double>(_vector, interval);

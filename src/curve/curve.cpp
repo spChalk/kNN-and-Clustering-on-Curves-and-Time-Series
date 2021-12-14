@@ -45,9 +45,6 @@ void Curve::print() {
         point->print();
 }
 
-void Curve::fit_to_grid(uint32_t grid_interval) {
-    Grid(grid_interval, get_data_dimensions()).fit(*this);
-}
 /*
 vector<Curve *> *Curve::generate_grid_family(uint32_t grid_interval, uint32_t grid_number) {
 

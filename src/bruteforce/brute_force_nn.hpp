@@ -13,7 +13,7 @@ using std::tuple;
 using std::string;
 
 // Computes NN with brute force
-void bruteforce_nn(FlattenedCurve &query, vector<FlattenedCurve *> *data,
-                    double(*distance_f)(FlattenedCurve&, FlattenedCurve&), std::tuple<double, string>* result);
+void bruteforce_nn(Curve &query, vector<Curve *> *data,
+                    double(*distance_f)(Curve&, Curve&), std::tuple<double, string>* result);
 
 #endif //PROJECT_1_BRUTE_FORCE_NN_HPP

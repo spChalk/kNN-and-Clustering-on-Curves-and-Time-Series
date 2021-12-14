@@ -112,7 +112,7 @@ double dot_product(vector<T> *a, vector<T> *b) {
  * Because this app handles big data, the average distance is being computed between
  * a subset (1%) of data.
  */
-uint32_t estimate_window_size(vector<FlattenedCurve *> *data, double(*distance)(FlattenedCurve&, FlattenedCurve&));
+uint32_t estimate_window_size(vector<Curve *> *data, double(*distance)(Curve&, Curve&));
 
 double avg_point_size_of_dataset(Dataset &set);
 double estimate_grid_interval(Dataset &input, Dataset &query);

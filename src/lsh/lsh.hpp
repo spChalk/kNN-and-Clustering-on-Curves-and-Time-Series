@@ -24,29 +24,40 @@ class LSH {
 private:
     // Hash tables
     vector< hashtable *> *maps;
+
     // Distance function
-    distance_f distance;
+    distance_f metric;
+
     // Radius (for range search)
     double radius;
 
-    Grid *grid;
+    std::vector<Grid *> *grids;
 
-    std::vector<FlattenedCurve *> *flattened_input_data;
-    std::vector<FlattenedCurve *> *flattened_query_data;
+    // We keep initial inputs here
+    std::vector<Curve *> *raw_inputs;
+    std::vector<Curve *> *raw_queries;
 
-    void curves_preprocess(std::vector<Curve *> &curves, double pruning_threshold, uint32_t max_curve_length);
+    // We store flattened vectors (for L grids each) here
+    std::vector< std::vector<FlattenedCurve *> *> *L_flattened_inputs;
+    std::vector< std::vector<FlattenedCurve *> *> *L_flattened_queries;
+
+    void curves_preprocess(std::vector<Curve *> &curves, double pr_t, uint32_t max_c_len, const std::string& type);
+    void curves_preprocess(std::vector<Curve *> &curves, uint32_t max_c_len, const std::string& type="input");
 
     // Run K Nearest Neighbours
-    void nn(FlattenedCurve &query, std::tuple<double, string>& result);
+    void nn(vector<FlattenedCurve *> &query_family, std::tuple<double, string>& result);
+
+    void set_metrics(const string &metric);
+    void delete_flattened_inputs();
 
 public:
 
     LSH(Dataset &input, Dataset &queries,
-        distance_f, uint32_t num_ht = 5, uint32_t num_hfs = 4,
+        const std::string &metric, uint32_t num_ht = 5, uint32_t num_hfs = 4,
         double radius = 10000);
 
     // Load data into the structure
-    void load(vector<FlattenedCurve *> *data);
+    void load(vector< vector<FlattenedCurve *> *> *data);
 
     void nearest_neighbor(const std::string &out_path);
 
@@ -54,6 +65,7 @@ public:
     void range_search(FlattenedCurve *query, list<tuple<FlattenedCurve *, double>> &);
 
     virtual ~LSH();
+
 };
 
 #endif //PROJECT_1_LSH_HPP

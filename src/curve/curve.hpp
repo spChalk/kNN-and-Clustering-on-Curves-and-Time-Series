@@ -12,7 +12,8 @@ class Curve {
 
 public:
     // TODO DO A DESTRUCTOR
-    Curve(std::string id, std::vector<Point *> *points);
+    Curve(std::string &id, std::vector<Point *> *points);
+    Curve(const Curve &curve);
 
     void filter(double pruning_threshold=0.02);
     void erase_time_axis();
@@ -58,6 +59,7 @@ public:
     std::string get_id();
     std::vector<double> *get_coordinates();
     uint32_t get_size();
+    void apply_padding(uint32_t limit);
 
     _Curve *to_FredCurve();
 };

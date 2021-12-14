@@ -9,6 +9,11 @@
 #include <stdexcept>
 #include <cmath>
 
+double Metrics::euclidean(Curve &a, Curve &b) {
+    //TODO
+    return 0;
+}
+
 double Metrics::euclidean(FlattenedCurve &a, FlattenedCurve &b) {
 
     if(a.get_size() != b.get_size()) {
@@ -96,3 +101,4 @@ double Metrics::continuous_frechet_distance(FlattenedCurve &c1, FlattenedCurve &
     delete fc1; delete fc2;
     return result;
 }
+

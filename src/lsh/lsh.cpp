@@ -302,14 +302,15 @@ void LSH::nearest_neighbor(const std::string &out_path) {
 }
 
 // Run Range-search
-/*void LSH::range_search(FlattenedCurve *query, list<tuple<FlattenedCurve *, double>> &results) {
+void LSH::range_search(flattened_curves &query_family, list<tuple<Curve *, double>> &results) {
 
     // Save computed distances
     auto dist_cache = unordered_map<string, double>();
     // For every map
+    int i = 0;
     for(auto & map : *this->maps) {
         // Find the bucket that the query is hashed into
-        uint32_t id = map->hash(query);
+        uint32_t id = map->hash(query_family[i]);
         uint32_t index = id % map->get_tablesize();
         auto hashbucket = map->get_bucket(index);
 
@@ -320,17 +321,27 @@ void LSH::nearest_neighbor(const std::string &out_path) {
             FlattenedCurve *p = get<1>(*it);
             string label = p->get_id();
 
-            *//* Check for distances, iff items key is equal to query's amplified hf value *//*
+            /* Check for distances, iff items key is equal to query's amplified hf value */
             if(id == identity) {
                 // Compute the distance between the query and the current point
                 double dist;
                 if (dist_cache.find(label) == dist_cache.end()) {
-                    dist = this->distance(*query, *p);
+
+                    Curve *raw_current_curve = label_to_curve->find(label)->second;
+
+                    if(metric_id != EUCLIDEAN) {
+                        Curve *raw_query_curve = label_to_curve->find((*query_family[i]).get_id())->second;
+                        dist = metric(*raw_query_curve, *raw_current_curve);
+
+                    } else
+                        dist = Metrics::Euclidean::distance(*query_family[i], *p);
+
                     dist_cache.insert({label, dist});
+
                     if (dist < this->radius)
-                        results.emplace_back(p, dist);
+                        results.emplace_back(raw_current_curve, dist);
                 }
             }
         }
     }
-}*/
+}

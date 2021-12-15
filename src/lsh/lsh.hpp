@@ -27,7 +27,7 @@ public:
     void nearest_neighbor(const std::string &out_path);
 
     // Run Range-search
-    void range_search(FlattenedCurve *query, std::list<tuple<FlattenedCurve *, double>> &);
+    void range_search(flattened_curves &query_family, list<tuple<Curve *, double>> &results);
 
     virtual ~LSH();
 

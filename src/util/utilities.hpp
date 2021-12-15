@@ -141,7 +141,7 @@ int input_handle_lsh(int narg, char const *argvect[], string *inf, string *qf, s
 int input_handle_hypercube(int narg, char const *argvect[], string *inf, string *qf, string *outf, uint32_t *k, uint32_t *M, uint32_t *probes, uint32_t *NN, uint32_t *radius);
 
 // Fully handles the Cluster input provided to the app
-int input_handle_cluster(int narg, char const *argvect[], string *inf, string *cf, string *outf, string *method, bool *verbose);
+int input_handle_cluster(int narg, char const *argvect[], string *inf, string *cf, string *outf, string *update, string *assignment, bool *silhouette, bool *verbose);
 
 // Fully copies a point and returns the newly allocated one
 Point *copy_point(Point *p);

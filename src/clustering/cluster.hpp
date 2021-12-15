@@ -27,14 +27,22 @@ class cluster {
 private:
     // Pointer to assignment function
     typedef void (cluster::*__CLUSTER_MODULE_assign_func)();
+    typedef uint32_t (cluster::*__CLUSTER_MODULE_update_func)();
     
     Dataset &dataset;
-    /*
-     * 0: Classic
-     * 1: LSH
-     * 2: Hypercube
-     */
-    uint8_t method;
+
+    enum assignment_method_t {
+        Classic,
+        LSH,
+        Hypercube,
+        LSH_Frechet
+    } assignment_method;
+
+    enum update_method_t {
+        Mean_Vector,
+        Mean_Frechet
+    } update_method;
+
     uint32_t num_of_clusters;
     double time_taken;
 
@@ -56,7 +64,7 @@ private:
 
     std::unordered_map<Point *, std::vector<Point *> *> *final_assign = nullptr;
 
-    void internal_run(__CLUSTER_MODULE_assign_func);
+    void internal_run(__CLUSTER_MODULE_assign_func assign_f, __CLUSTER_MODULE_update_func update_f);
 
     Point *get_2nd_closest_centroid(Point *, Point *);
 
@@ -76,9 +84,9 @@ private:
     void delete_assignment();
 
 public:
-    cluster(string &config_path, Dataset &dataset, distance_f, const string &mode="Classic");
+    cluster(string &config_path, Dataset &dataset, distance_f _distance_f, const string& assignment = "Classic", const string &update = "Mean_Vector");
+    ~cluster();
     void perform_clustering();
-    virtual ~cluster();
     void write_results_to_file(const std::string & out_path, bool verbose=false, bool evalution_on=true);
 };
 

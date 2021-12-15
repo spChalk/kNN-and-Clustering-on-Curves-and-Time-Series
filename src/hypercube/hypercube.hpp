@@ -15,10 +15,10 @@
 
 // The Hypercube hash table is a vector, and each bucket is also represented as a vector
 // (seperate-chaining HT implementation)
-typedef std::vector<std::vector<Point *>> hash_table;
+typedef std::vector<std::vector<FlattenedCurve *>> hash_table;
 
 // User-given distance metric
-typedef double(*distance_f)(Point&, Point&);
+typedef double(*distance_f)(FlattenedCurve&, FlattenedCurve&);
 
 class hypercube
 {
@@ -39,11 +39,11 @@ private:
     std::vector<hash_function *> *hash_family;  // LSH-admitting hash family
 
     // Performs a bucket projection to a hypercube vertex
-    uint32_t convert_bucket_to_vertex(Point *datapoint);
+    uint32_t convert_bucket_to_vertex(FlattenedCurve *datapoint);
     uint32_t select_next_vertex(bool & visited_all, uint32_t current_vertex, uint32_t max_vertices, std::queue<uint32_t> &next_vertices, std::unordered_set<uint32_t> & vertex_cache);
 
     template <typename C, typename T>
-    void perform_query(Point *query, T metric, distance_f dist_func, C & top_n);
+    void perform_query(FlattenedCurve *query, T metric, distance_f dist_func, C & top_n);
 
 public:
     // Structural Hypercube operations
@@ -51,14 +51,12 @@ public:
     void set_limits(uint32_t N=1, uint32_t R=10000, uint32_t M=10, uint32_t probes=2);
     ~hypercube();
 
-    // Insert every point/record of dataset in the Hypercube
-    void insert_from_dataset(Dataset & dataset);
-    void insert_point(Point *);
+    void insert_point(FlattenedCurve *);
  
     // Query operations
-    uint32_t search_for_vertex(Point *p);
-    void knn(Point *query, std::multimap<double, std::string> & top_n);
-    void range_search(Point *query, std::list<std::tuple<Point *, double>> & top_n);
+    uint32_t search_for_vertex(FlattenedCurve *p);
+    void knn(FlattenedCurve *query, std::multimap<double, std::string> & top_n);
+    void range_search(FlattenedCurve *query, std::list<std::tuple<FlattenedCurve *, double>> & top_n);
 };
 
 

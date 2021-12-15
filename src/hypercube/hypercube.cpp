@@ -16,25 +16,28 @@ static auto rnd = std::bind(std::uniform_int_distribution<uint32_t>(0,1),std::re
 void hypercube::set_limits(uint32_t newN, uint32_t newR, uint32_t newM, uint32_t new_probes) {
     this->M = newM; this->probes = new_probes; this->N = newN; this->R = newR;
 }
-
+// TODO : Test init dim
 // Constructor - creates a Hypercube data structure and inserts every record from given dataset.
 hypercube::hypercube(Dataset &dataset, distance_f dist_func, uint32_t k, uint32_t M, uint32_t probes, uint32_t N, uint32_t R)
-: init_dim(dataset.get_data_dimensions()), k(k), dist_func(dist_func)
+: init_dim(dataset.getData()->at(0)->get_data_dimensions()), k(k), dist_func(dist_func)
 {
     this->set_limits(N, R, M, probes);
 
     uint32_t num_buckets = pow(2, k);  // 2^(d') buckets
-    this->hypercube_ht = new vector<vector<Point *>>(num_buckets);
+    this->hypercube_ht = new vector<vector<FlattenedCurve *>>(num_buckets);
     this->bucket_to_vertex_index = new std::unordered_map<uint64_t , int>();
     this->hash_family = new vector<hash_function *>(k);
 
-    uint32_t window = estimate_window_size(dataset.getData(), this->dist_func);
+    auto data = dataset.flatten_data();
+    uint32_t window = estimate_window_size(data, this->dist_func);
 
     for (uint32_t i = 0; i < k; i++) {  // Create d' LSH-admitting hash functions
         (*(this->hash_family))[i] = new hash_function(window, init_dim);
     }
-
-    this->insert_from_dataset(dataset);  // Insert dataset records
+    for (auto point_ptr: *data)
+        this->insert_point(point_ptr);  // Insert dataset records
+    
+    // delete data;  // TODO: Hopefully this will not invoke item destructors
 }
 
 hypercube::~hypercube() {
@@ -46,19 +49,13 @@ hypercube::~hypercube() {
     delete this->hash_family;
 }
 
-void hypercube::insert_from_dataset(Dataset &dataset) {
-    auto data = dataset.getData();
-    for (auto point_ptr: *data)
-        insert_point(point_ptr);
-}
-
-void hypercube::insert_point(Point *point_ptr) {
+void hypercube::insert_point(FlattenedCurve *point_ptr) {
     uint32_t bucket = convert_bucket_to_vertex(point_ptr);
     (*(this->hypercube_ht))[bucket].push_back(point_ptr);
 }
 
 // Project a bucket given by h-functions to a Hypercube vertex.
-uint32_t hypercube::convert_bucket_to_vertex(Point *datapoint)
+uint32_t hypercube::convert_bucket_to_vertex(FlattenedCurve *datapoint)
 {
     vector<double> *coordinates = datapoint->get_coordinates();
     uint32_t vertex = 0x0000;
@@ -89,7 +86,7 @@ uint32_t hypercube::convert_bucket_to_vertex(Point *datapoint)
 }
 
 // Find the vertex of a point in the Hypercube
-uint32_t hypercube::search_for_vertex(Point *p) {
+uint32_t hypercube::search_for_vertex(FlattenedCurve *p) {
     return convert_bucket_to_vertex(p);
 }
 
@@ -118,14 +115,14 @@ uint32_t hypercube::select_next_vertex(bool & visited_all, uint32_t current_vert
 }
 
 // Update the list storing the results of range queries.
-static void maintain_result_container(std::list<std::tuple<Point *, double>> & top_n, uint32_t radius, double dist, std::string & label, Point *p)
+static void maintain_result_container(std::list<std::tuple<FlattenedCurve *, double>> & top_n, uint32_t radius, double dist, std::string & label, FlattenedCurve *p)
 {
     if (dist < radius)
         top_n.emplace_back(p, dist);
 }
 
 // Update the multimap storing the K results of a K-NN query.
-static void maintain_result_container(std::multimap<double, std::string> & top_n, uint32_t k, double dist, std::string & label, Point *p)
+static void maintain_result_container(std::multimap<double, std::string> & top_n, uint32_t k, double dist, std::string & label, FlattenedCurve *p)
 {
     if (top_n.size() == k) {
         if (dist < top_n.rbegin()->first)
@@ -137,13 +134,13 @@ static void maintain_result_container(std::multimap<double, std::string> & top_n
 }
 
 // Perform a K-NN query.
-void hypercube::knn(Point *query, std::multimap<double, std::string> & top_n) {
+void hypercube::knn(FlattenedCurve *query, std::multimap<double, std::string> & top_n) {
   if(this->N == 0) return;
   this->perform_query(query, this->N, this->dist_func, top_n);
 }
 
 // Perform a range query.
-void hypercube::range_search(Point *query, std::list<std::tuple<Point *, double>>& top_n) {
+void hypercube::range_search(FlattenedCurve *query, std::list<std::tuple<FlattenedCurve *, double>>& top_n) {
   this->perform_query(query, this->R, this->dist_func, top_n);
 }
 
@@ -151,7 +148,7 @@ void hypercube::range_search(Point *query, std::list<std::tuple<Point *, double>
 // C denotes the type of the Container storing the Results of the Query
 // T denotes the metric used for bounds check (type of k and R parameters)
 template <typename C, typename T>
-void hypercube::perform_query(Point *query, T metric, distance_f dist_func, C & top_n)
+void hypercube::perform_query(FlattenedCurve *query, T metric, distance_f dist_func, C & top_n)
 {
     // Keep explored vertices
     auto vertex_cache = std::unordered_set<uint32_t>();

@@ -13,46 +13,68 @@ using std::get;
 /////////////////////////////////////////////////////////////////////
 // Constructor - Destructor(s)
 
-cluster::cluster(string &config_path, Dataset &dataset, distance_f _distance_f, const string& mode)
+cluster::cluster(string &config_path, Dataset &dataset, distance_f _distance_f, const string& assignment, const string &update)
 :
 dataset(dataset),
 dist_func(_distance_f),
-centroids(new set<Point *>()),
-final_assign(new unordered_map<Point *, vector<Point *> *>())
+// centroids(new set<Point *>()),
+// final_assign(new unordered_map<Point *, vector<Point *> *>())
 {
-    // Defaults
     uint32_t _num_of_clusters = 1;
     uint32_t _num_of_ht = 3;
     uint32_t _num_of_hf = 4;
     uint32_t _max_num_of_M_hypercube = 10;
     uint32_t _num_of_hypercube_dims = 3;
-    uint32_t _num_of_probes = 2;
+    uint32_t _num_of_probes = 2;// Defaults
+    
 
     // Read the configuration file
     read_cluster_config_file(config_path, &_num_of_clusters, &_num_of_ht, &_num_of_hf,
                              &_max_num_of_M_hypercube, &_num_of_hypercube_dims, &_num_of_probes);
-    // If the given number of clusters is greater than the points present in dataset, exit
-    if(_num_of_clusters >= dataset.getData()->size()) {
-        ostringstream msg;
-        msg << "Error, data size must be more than cluster size." << endl;
-        throw runtime_error(msg.str());
-    }
+
     this->num_of_clusters = _num_of_clusters;
 
-    // Choose the execution method
-    if (mode == "Classic")
-        this->method = 0;
-    else if (mode == "LSH") {
-        this->method = 1;
-        this->lsh_ds = new LSH(this->dataset.getData(), this->dist_func, _num_of_ht, _num_of_hf);
+    // Choose the update method
+    if (update == "Mean_Vector") {
+        this->update_method = Mean_Vector;
+        this->input_type = Points;
     }
-    else if (mode == "Hypercube") {
-        this->method = 2;
-        this->hc_ds = new hypercube(this->dataset, this->dist_func, _num_of_hypercube_dims, _max_num_of_M_hypercube, _num_of_probes);
+    else if (update == "Mean_Frechet") {
+        this->update_method = Mean_Frechet;
+        this->input_type = Curves;
+        // this->lsh_ds = new LSH(this->dataset.getData(), this->dist_func, _num_of_ht, _num_of_hf);  // TODO : hmm
     }
     else {
         ostringstream msg;
-        msg << "Error, Assignment Method should be one of the following:\n> Classic\n> LSH\n> Hypercube\n." << endl;
+        msg << "Error, Update Method should be one of the following:\n> Mean_Vector\n> Mean_Frechet\n." << endl;
+        throw runtime_error(msg.str());
+    }
+
+    if (this->input_type == Points) {
+        this->flat_curve_dataset = dataset.flatten_data();
+    }
+    else {
+        this->curve_dataset = dataset.getData();
+    }
+
+    // Choose the execution method
+    if (assignment == "Classic")
+        this->assignment_method = Classic;
+    else if (assignment == "LSH") {
+        this->assignment_method = LSH;
+        this->lsh_ds = new LSH(this->dataset.getData(), this->dist_func, _num_of_ht, _num_of_hf);
+    }
+    else if (assignment == "Hypercube") {
+        this->assignment_method = Hypercube;
+        this->hc_ds = new hypercube(this->dataset, this->dist_func, _num_of_hypercube_dims, _max_num_of_M_hypercube, _num_of_probes);
+    }
+    // else if (assignment == "LSH_Frechet") {
+    //     this->assignment_method = LSH_Frechet;
+    //     this->lsh_ds = new LSH(this->dataset.getData(), this->dist_func, _num_of_ht, _num_of_hf);  // TODO: hmm
+    // }
+    else {
+        ostringstream msg;
+        msg << "Error, Assignment Method should be one of the following:\n> Classic\n> LSH\n> Hypercube\n> LSH_Frechet\n." << endl;
         throw runtime_error(msg.str());
     }
 }
@@ -412,18 +434,18 @@ void cluster::perform_clustering()
 }
 
 // Main running function for clustering
-void cluster::internal_run(__CLUSTER_MODULE_assign_func assign_f)
+void cluster::internal_run(__CLUSTER_MODULE_assign_func assign_f, __CLUSTER_MODULE_update_func update_f)
 {
     // Initialize the centroids
-    initialize_centroids();
+    this->initialize_centroids();
     // While the maximum value from the amount of changes of each centroid
     // is more than a specified threshold, repeat the
     // update and assignment processes
     do {
         this->delete_assignment();
-        ((*this).*assign_f)();
+        (this->*assign_f)();
     }
-    while(update() > 10);
+    while((this->*update_f)() > 10);
 }
 
 /////////////////////////////////////////////////////////////////////

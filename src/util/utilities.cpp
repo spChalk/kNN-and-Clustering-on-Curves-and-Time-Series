@@ -270,22 +270,27 @@ Point *copy_point(Point *p) {
 }
 
 // Fully handles the Cluster input provided to the app
-int input_handle_cluster(int narg, char const *argvect[], string *inf, string *cf, string *outf, string *method, bool *verbose) {
+int input_handle_cluster(int narg, char const *argvect[], string *inf, string *cf, string *outf, string *update, string *assignment, bool *silhouette, bool *verbose) {
 
     if(narg == 0) return 0;
 
+    char usage[] = "Usage ./cluster –i <input file> –c <configuration file> -o <output file>\
+-update <Mean_Frechet or Mean_Vector> -assignment <Classic or LSH or Hypercube or LSH_Frechet>\
+-complete <optional> -silhouette <optional>";
+
     /* Correct number of arguments check */
-    if (narg > 11) {
-        cout << "Usage ./cluster –i <input file> –c <configuration file> -o <output file> -complete <optional> -m <method: Classic or LSH or Hypercube>" << endl;
+    if (narg > 13) {
+        cout << usage << endl;
         return -1;
     }
 
     /* in-line parameters */
-    char argI[3] = "-i", argC[3] = "-c", argO[3] = "-o", argM[3] = "-m", argComplete[10] = "-complete";
+    char argI[3] = "-i", argC[3] = "-c", argO[3] = "-o", argComplete[10] = "-complete";
+    char argAssign[] = "-assignment", argUpdate[] = "-update", argSil[] = "-silhouette";
 
     /* Check if the in-line parameters are being written */
-    for(int i = 1; i < narg; i++) {
-
+    for(int i = 1; i < narg; i++)
+    {
         if (strcmp(argvect[i], argI) == 0 && is_uint(argvect[i + 1]) == false) {
             *inf = argvect[i + 1];
         }
@@ -295,8 +300,22 @@ int input_handle_cluster(int narg, char const *argvect[], string *inf, string *c
         else if (strcmp(argvect[i], argO) == 0 && is_uint(argvect[i + 1]) == false) {
             *outf = argvect[i + 1];
         }
-        else if (strcmp(argvect[i], argM) == 0 && is_uint(argvect[i + 1]) == false) {
-            *method = argvect[i + 1];
+        else if (strcmp(argvect[i], argAssign) == 0 && is_uint(argvect[i + 1]) == false) {
+            *assignment = argvect[i + 1];
+            if (strcmp(argvect[i + 1], "Classic") && strcmp(argvect[i + 1], "LSH") && strcmp(argvect[i + 1], "Hypercube") && strcmp(argvect[i + 1], "LSH_Frechet")) {
+                cout << usage << endl;
+                return -1;
+            }
+        }
+        else if (strcmp(argvect[i], argUpdate) == 0 && is_uint(argvect[i + 1]) == false) {
+            *update = argvect[i + 1];
+            if (strcmp(argvect[i + 1], "Mean_Frechet") && strcmp(argvect[i + 1], "Mean_Vector")) {
+                cout << usage << endl;
+                return -1;
+            }
+        }
+        else if (strcmp(argvect[i], argSil) == 0) {
+            *silhouette = true;
         }
         else if (strcmp(argvect[i], argComplete) == 0) {
             *verbose = true;

@@ -289,9 +289,8 @@ void LSH::nearest_neighbor(const std::string &out_path) {
         avg_lsh_time_taken += (lsh_time_taken / raw_queries->size());
         abg_brutef_time_taken += (brutef_time_taken / raw_queries->size());
 
-        // TODO: fix MAF with double max
         double candidate_maf = std::get<0>(top_lsh) / std::get<0>(top_brutef);
-        if(maf < candidate_maf)
+        if(maf > std::numeric_limits<double>::max() - 10e5 && maf < candidate_maf)
             maf = candidate_maf;
 
         write_data_to_out_file(label, top_lsh, top_brutef, out_path);

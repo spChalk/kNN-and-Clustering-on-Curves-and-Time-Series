@@ -8,7 +8,7 @@
 #include "../src/lsh/hash_functions/amplified_hf.hpp"
 #include "../src/lsh/lsh.hpp"
 #include "../src/util/files/file_reader.hpp"
-#include "../src/bruteforce/brute_force_knn.hpp"
+#include "../src/bruteforce/brute_force_nn.hpp"
 #include "../src/util/utilities.hpp"
 #include "../src/util/metrics/metrics.hpp"
 

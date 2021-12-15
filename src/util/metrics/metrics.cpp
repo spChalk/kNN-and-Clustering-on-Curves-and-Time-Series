@@ -9,11 +9,33 @@
 #include <stdexcept>
 #include <cmath>
 
+double Metrics::euclidean(Curve &a, Curve &b) {
+    //TODO
+    return 0;
+}
+
+double Metrics::euclidean(FlattenedCurve &a, FlattenedCurve &b) {
+
+    if(a.get_size() != b.get_size()) {
+        std::ostringstream msg;
+        msg << "Exception in 'distance'. Curves do not have the same size." << std::endl;
+        throw std::runtime_error(msg.str());
+    }
+    auto a_coord = *a.get_coordinates();
+    auto b_coord = *b.get_coordinates();
+    double result = 0;
+    for(uint32_t i = 0; i < a.get_size(); i++) {
+        double factor = a_coord[i] - b_coord[i];
+        result += (factor * factor);
+    }
+    return sqrt(result);
+}
+
 double Metrics::euclidean(Point &a, Point &b) {
 
     if(a.get_dimensions() != b.get_dimensions()) {
         std::ostringstream msg;
-        msg << "Exception in 'distance'. Vectors do not have the same size." << std::endl;
+        msg << "Exception in 'distance'. Curves do not have the same size." << std::endl;
         throw std::runtime_error(msg.str());
     }
     auto a_coord = *a.get_coordinates();
@@ -79,3 +101,4 @@ double Metrics::continuous_frechet_distance(FlattenedCurve &c1, FlattenedCurve &
     delete fc1; delete fc2;
     return result;
 }
+

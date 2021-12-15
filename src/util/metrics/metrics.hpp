@@ -9,7 +9,11 @@ class Metrics {
 
 public:
     static double euclidean(Point &a, Point &b);
+    static double euclidean(FlattenedCurve &a, FlattenedCurve &b);
+    static double euclidean(Curve &a, Curve &b);
+
     static double discrete_frechet_distance(Curve &c1, Curve &c2);
+
     static double continuous_frechet_distance(Curve &c1, Curve &c2);
     static double continuous_frechet_distance(FlattenedCurve &c1, FlattenedCurve &c2);
 };

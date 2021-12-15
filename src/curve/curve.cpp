@@ -4,8 +4,15 @@
 
 using std::get;
 
-Curve::Curve(std::string _id, std::vector<Point *> *_points):
+Curve::Curve(std::string &_id, std::vector<Point *> *_points):
 id(_id), points(_points) {}
+
+Curve::Curve(const Curve &curve):
+id(curve.id), points(new std::vector<Point *>()) {
+
+    for(auto &point: *curve.points)
+        points->push_back(copy_point(point));
+}
 
 std::string &Curve::get_id() {
     return this->id;
@@ -44,24 +51,6 @@ void Curve::print() {
     for(auto point: *points)
         point->print();
 }
-
-void Curve::fit_to_grid(uint32_t grid_interval) {
-    Grid(grid_interval, get_data_dimensions()).fit(*this);
-}
-/*
-vector<Curve *> *Curve::generate_grid_family(uint32_t grid_interval, uint32_t grid_number) {
-
-    auto _curve_on_grids = new vector<Curve *>();
-    // First create N grid copies and then populate the
-    // "curve_on_grids" class structure
-    // in order to avoid eternal loop
-    for (int i = 0; i < grid_number; i++) {
-        Curve *newCurve = new Curve(*this);
-        Grid(grid_interval, get_data_dimensions()).fit(*newCurve);
-        _curve_on_grids->push_back(newCurve);
-    }
-    return _curve_on_grids;
-}*/
 
 Curve::~Curve() {
     for(auto & point: *points)
@@ -154,4 +143,10 @@ _Curve *FlattenedCurve::to_FredCurve() {
     for (uint32_t i = 0; i < fredCurve->size(); i++)
         fredCurve->operator[](i).set(0, (*points)[i]);
     return fredCurve;
+}
+
+void FlattenedCurve::apply_padding(uint32_t limit) {
+    while(points->size() < limit) {
+        points->push_back(0.0);
+    }
 }

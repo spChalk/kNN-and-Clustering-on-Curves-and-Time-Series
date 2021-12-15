@@ -1,4 +1,5 @@
 
+#include <iomanip>
 #include "file_reader.hpp"
 
 using std::endl;
@@ -117,15 +118,11 @@ vector<Curve *> *file_reader(const string& filename) {
     }
 }
 
-/*
+
 // Writes all info necessary for the output file
 void write_data_to_out_file(const string& query_id,
-                            multimap<double, string> & lsh_data,
-                            double method_time_taken,
-                            multimap<double, string> & brutef_data,
-                            double brutef_time_taken,
-                            list<tuple<Point *, double>> & range_points,
-                            int radius,
+                            std::tuple<double, string> & top_lsh,
+                            std::tuple<double, string> & top_brutef,
                             const string& out_path,
                             const string& method) {
 
@@ -135,37 +132,12 @@ void write_data_to_out_file(const string& query_id,
         out.open(out_path, std::ios_base::app);
 
         // Query id
-        out << "Query: " << query_id << endl << endl;
-
-        // Compare LSH to Hypercube
-        uint32_t i = 1;
-        for(auto it_1 = lsh_data.cbegin(), end_1 = lsh_data.cend(),
-                    it_2 = brutef_data.cbegin(), end_2 = brutef_data.cend();
-            it_1 != end_1 || it_2 != end_2;) {
-
-            if(it_1 != end_1) {
-                out << "Nearest neighbor-" << i++ << ": " << it_1->second << endl;
-                out << "distance" << method << ": " << it_1->first << endl;
-            }
-            if(it_2 != end_2) {
-                if(it_1 == end_1) {
-                    out << "Nearest neighbor-" << i++ << ": " << it_2->second << endl;
-                }
-                out << "distanceTrue: " << it_2->first << endl << endl;
-                ++it_2;
-            }
-            if(it_1 != end_1) ++it_1;
-        }
-
-        // Print time intervals
-        out << "t" << method << ": " << method_time_taken << std::setprecision(5) << endl;
-        out << "tTrue: " << brutef_time_taken << std::setprecision(5) << endl;
-
-        // Print all points inside the provided radius
-        out << radius << "-near neighbors:" << endl;
-        for(const auto& point: range_points)
-            out << (*(get<0>(point))).get_id() << endl;
-        out << endl;
+        out << "Query: " << query_id << endl;
+        out << "Algorithm: " << method << endl;
+        out << "Approximate Nearest neighbor: " << std::get<1>(top_lsh) << endl;
+        out << "True Nearest neighbor: " << std::get<1>(top_brutef) << endl;
+        out << "distanceApproximate: " << std::get<0>(top_lsh) << endl;
+        out << "distanceTrue: " << std::get<0>(top_brutef) << endl << endl;
 
         out.close();
 
@@ -175,7 +147,27 @@ void write_data_to_out_file(const string& query_id,
         throw runtime_error(msg.str());
     }
 }
-*/
+
+// Writes all info necessary for the output file
+void write_data_to_out_file(double lsh_time, double brutef_time, double maf, const string& out_path) {
+
+    ofstream out;
+    out.exceptions(ifstream::badbit);
+    try {
+        out.open(out_path, std::ios_base::app);
+
+        out << "tApproximateAverage: " << lsh_time << endl;
+        out << "tTrueAverage: " << brutef_time << endl;
+        out << "MAF: " << maf << endl;
+
+        out.close();
+
+    } catch (const ofstream::failure &err) {
+        ostringstream msg;
+        msg << "Exception during the opening of " << out_path << endl;
+        throw runtime_error(msg.str());
+    }
+}
 
 void read_cluster_config_file(const string& filename, uint32_t *noc, uint32_t *noht,
                               uint32_t *nohf, uint32_t *mMh, uint32_t *nhd, uint32_t *nop) {

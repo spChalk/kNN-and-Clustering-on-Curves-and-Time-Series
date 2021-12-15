@@ -5,7 +5,7 @@
 #include "../src/util/dataset/dataset.hpp"
 #include "../src/util/files/file_reader.hpp"
 #include "../src/util/utilities.hpp"
-#include "../src/bruteforce/brute_force_knn.hpp"
+#include "../src/bruteforce/brute_force_nn.hpp"
 #include "../src/hypercube/hypercube.hpp"
 #include "../src/util/metrics/metrics.hpp"
 

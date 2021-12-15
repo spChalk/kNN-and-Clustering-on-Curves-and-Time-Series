@@ -15,7 +15,7 @@ using std::get;
  * Because this app handles big data, the average distance is being computed between
  * a subset (1%) of data.
  */
-uint32_t estimate_window_size(vector<FlattenedCurve *> *data, double(*distance)(FlattenedCurve&, FlattenedCurve&)) {
+uint32_t estimate_window_size(vector<Curve *> *data, double(*distance)(Curve&, Curve&)) {
 
     // Shuffle data
     uint32_t data_size = data->size();
@@ -45,14 +45,14 @@ double avg_point_size_of_dataset(Dataset &set) {
  * Compute the average points of all curves in the input dataset and in the query dataset separately.
  * Return approx. 4 * data dimensions * minimum of the 2 above averages.
  */
-uint32_t estimate_grid_interval(Dataset &input, Dataset &query) {
+double estimate_grid_interval(Dataset &input, Dataset &query) {
 
     uint32_t dimensions = (*input.getData())[0]->get_data_dimensions();
     double avg_input_distances = avg_point_size_of_dataset(input);
     double avg_query_distances = avg_point_size_of_dataset(query);
 
     auto result = (uint32_t)std::max(avg_input_distances, avg_query_distances);
-    return 4 * dimensions * result;
+    return dimensions * result * 10e-4;
 }
 
 uint32_t compute_max_curve_length_(Dataset &set) {

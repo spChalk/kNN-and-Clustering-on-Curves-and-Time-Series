@@ -11,14 +11,15 @@ int main(int argc, char const *argv[]) {
     auto dataset = Dataset(input_path);
     auto queries = Dataset(query_path);
 
-    LSH lsh = LSH(dataset, queries, Metrics::continuous_frechet_distance, 1);
+    LSH lsh = LSH(dataset, queries, "discr_frechet", 5);
 
     std::cout << "\nRunning LSH with Continuous Frechet distance metric: " << endl
          << "- Input path: " << input_path << endl
          << "- Query path: " << query_path << endl
          << "- Output path: " << out_path << endl;
 
-    lsh.nearest_neighbor(out_path);
+    // ΤΟDO: Throws SEG!!!
+    //lsh.nearest_neighbor(out_path);
 
     std::cout << "\nGoodbye!" << endl;
 

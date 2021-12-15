@@ -10,8 +10,15 @@
 #include <cmath>
 
 double Metrics::euclidean(Curve &a, Curve &b) {
-    //TODO
-    return 0;
+    auto ap = a.get_points();
+    auto bp = b.get_points();
+    uint32_t size = std::min( ap->size(), bp->size() );
+    if (size == 0) return 0;
+    double total = 0;
+    for (uint32_t i = 0; i != size; ++i) {
+        total += Metrics::euclidean(*ap->at(i), *bp->at(i));
+    }
+    return total / size;
 }
 
 double Metrics::euclidean(FlattenedCurve &a, FlattenedCurve &b) {

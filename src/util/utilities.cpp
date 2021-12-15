@@ -31,7 +31,7 @@ uint32_t estimate_window_size(vector<Curve *> *data, double(*distance)(Curve&, C
         for(uint32_t j = i + 1; j < subset; ++j)
             dist += ( distance((*(*data)[i]), (*(*data)[j])) ) / (double)subset ;
     // Return avg distance
-    return (uint32_t)(dist * (1.0 / subset));
+    return (uint32_t)(dist * (10.0 / subset));
 }
 
 double avg_point_size_of_dataset(std::vector<Curve *> *set) {
@@ -262,11 +262,6 @@ int input_handle_hypercube(int narg, char const *argvect[], string *inf, string 
         return -1;
     }
     return 0;
-}
-
-// Fully copies a point and returns the newly allocated one
-Point *copy_point(Point *p) {
-    return Point::copy_point(*p);
 }
 
 // Fully handles the Cluster input provided to the app

@@ -22,10 +22,6 @@ public:
     Point(std::vector<double> &_coord)
             : coordinates(new std::vector<double>(_coord)) {}
 
-    static Point *copy_point(Point &p) {
-        return new Point((*p.coordinates));
-    }
-
     ~Point() {
         delete this->coordinates;
     }

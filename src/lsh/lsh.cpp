@@ -1,7 +1,5 @@
 
 #include "lsh.hpp"
-#include "../util/utilities.hpp"
-#include "../util/metrics/metrics.hpp"
 #include "../bruteforce/brute_force_nn.hpp"
 #include "../util/files/file_reader.hpp"
 #include <random>
@@ -22,23 +20,21 @@ using std::get;
 #define GET_DURATION(START, END) (std::chrono::duration_cast<std::chrono::nanoseconds>((END) - (START)).count() * 1e-9)
 #define GET_CURR_TIME() (std::chrono::high_resolution_clock::now())
 
-LSH::LSH(Dataset &input, Dataset &queries,
-         const enum metrics &_metric, uint32_t num_ht, uint32_t num_hfs,
-         double _radius)
-: maps(new vector< hashtable *>()),
-  radius(_radius),
-  metric_id(_metric),
-  grids(new std::vector<Grid *>()),
-  raw_inputs(input.getData()),
-  raw_queries(queries.getData()),
-  L_flattened_inputs(new std::vector< std::vector< FlattenedCurve *> *>()),
-  L_flattened_queries(new std::vector< std::vector< FlattenedCurve *> *>()),
-  label_to_curve(new std::unordered_map<std::string, Curve *>()) {
+LSH::LSH(Dataset &input, Dataset &queries, const enum metrics &_metric, uint32_t num_ht, uint32_t num_hfs, double _radius):
+        maps(new vector< hashtable *>()),
+        radius(_radius),
+        metric_id(_metric),
+        grids(new std::vector<Grid *>()),
+        raw_inputs(input.getData()),
+        raw_queries(queries.getData()),
+        L_flattened_inputs(new vector_of_flattened_curves()),
+        L_flattened_queries(new vector_of_flattened_curves()),
+        label_to_curve(new std::unordered_map<std::string, Curve *>()) {
 
     auto max_curve_length = set_metrics_and_preprocess(num_ht);
 
     // Automatically compute the window size
-    uint32_t window = estimate_window_size(input.getData(), Metrics::Discrete_Frechet::distance);
+    uint32_t window = 2000;//estimate_window_size(raw_inputs, Metrics::Discrete_Frechet::distance);
 
     for (uint32_t i = 0; i < num_ht; i++) {
         /* Automatically scale the size of the Hash family's tables by computing:
@@ -97,11 +93,11 @@ void LSH::curves_preprocess(std::vector<Curve *> &curves, const std::string& typ
             auto flattened_curve = _curve.flatten();
             if (type == "input") {
                 if (L_flattened_inputs->size() < i + 1)
-                    L_flattened_inputs->push_back(new std::vector<FlattenedCurve *>());
+                    L_flattened_inputs->push_back(new flattened_curves());
                 (*L_flattened_inputs)[i]->push_back(flattened_curve);
             } else {
                 if (L_flattened_queries->size() < i + 1)
-                    L_flattened_queries->push_back(new std::vector<FlattenedCurve *>());
+                    L_flattened_queries->push_back(new flattened_curves());
                 (*L_flattened_queries)[i]->push_back(flattened_curve);
             }
         }
@@ -126,11 +122,11 @@ void LSH::curves_preprocess(std::vector<Curve *> &curves, double pruning_thresho
 
             if (type == "input") {
                 if (L_flattened_inputs->size() < i + 1)
-                    L_flattened_inputs->push_back(new std::vector<FlattenedCurve *>());
+                    L_flattened_inputs->push_back(new flattened_curves());
                 (*L_flattened_inputs)[i]->push_back(flattened_curve);
             } else {
                 if (L_flattened_queries->size() < i + 1)
-                    L_flattened_queries->push_back(new std::vector<FlattenedCurve *>());
+                    L_flattened_queries->push_back(new flattened_curves());
                 (*L_flattened_queries)[i]->push_back(flattened_curve);
             }
         }
@@ -148,17 +144,18 @@ void LSH::curves_preprocess(std::vector<Curve *> &curves, uint32_t max_curve_len
             auto _curve = *curve;
             grid->fit(_curve);
             grid->remove_consecutive_duplicates(_curve);
+
             auto flattened_curve = _curve.flatten();
             flattened_curve->apply_padding(max_curve_length);
 
             if(type == "input") {
                 if(L_flattened_inputs->size() < i+1)
-                    L_flattened_inputs->push_back(new std::vector<FlattenedCurve *>());
+                    L_flattened_inputs->push_back(new flattened_curves());
                 (*L_flattened_inputs)[i]->push_back(flattened_curve);
             }
             else {
                 if(L_flattened_queries->size() < i+1)
-                    L_flattened_queries->push_back(new std::vector<FlattenedCurve *>());
+                    L_flattened_queries->push_back(new flattened_curves());
                 (*L_flattened_queries)[i]->push_back(flattened_curve);
             }
         }
@@ -219,7 +216,7 @@ void LSH::load() {
 }
 
 // Run K Nearest Neighbours
-void LSH::nn(vector<FlattenedCurve *> &query_family, std::tuple<double, string> &result) {
+void LSH::nn(flattened_curves &query_family, std::tuple<double, string> &result) {
 
     // Save computed distances
     auto dist_cache = unordered_map<string, double>();
@@ -291,6 +288,8 @@ void LSH::nearest_neighbor(const std::string &out_path) {
 
         avg_lsh_time_taken += (lsh_time_taken / raw_queries->size());
         abg_brutef_time_taken += (brutef_time_taken / raw_queries->size());
+
+        // TODO: fix MAF with double max
         double candidate_maf = std::get<0>(top_lsh) / std::get<0>(top_brutef);
         if(maf < candidate_maf)
             maf = candidate_maf;

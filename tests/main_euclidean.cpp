@@ -5,13 +5,13 @@
 
 int main(int argc, char const *argv[]) {
 
-    std::string input_path = "../data/nasd_input_small.csv";
+    std::string input_path = "../data/nasd_input.csv";
     std::string query_path = "../data/nasd_query_small.csv";
-    std::string out_path = "../data/out.txt";
+    std::string out_path = "../data/out_euclidean.txt";
     auto dataset = Dataset(input_path);
     auto queries = Dataset(query_path);
 
-    LSH lsh = LSH(dataset, queries, EUCLIDEAN, 5);
+    LSH lsh = LSH(dataset, queries, EUCLIDEAN, 1);
 
     std::cout << "\nRunning LSH with Euclidean distance metric: " << endl
          << "- Input path: " << input_path << endl

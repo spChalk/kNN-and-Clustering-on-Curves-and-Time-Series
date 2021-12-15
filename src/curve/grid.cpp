@@ -16,8 +16,11 @@ void Grid::remove_consecutive_duplicates(Curve &curve) {
     auto curve_data = curve.get_points();
     for(uint32_t i=0; i < curve.get_points()->size() - 1; i++)
         while (i+1 < curve.get_points()->size() &&
-                    are_equal_consecutive_vectors(curve_data, i))
+                    are_equal_consecutive_vectors(curve_data, i)) {
+            auto to_delete = (*curve_data)[i+1];
             curve_data->erase(curve_data->begin() + i + 1);
+            delete to_delete;
+        }
 }
 
 bool Grid::are_equal_consecutive_vectors(std::vector<Point *> *curve_data,

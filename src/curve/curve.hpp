@@ -3,7 +3,6 @@
 
 #include <tuple>
 #include <iostream>
-// #include "../util/metrics/metrics.hpp" // ?? Harry: commented this out to avoid possible circular includes
 #include "./point.hpp"
 #include "../../cont_frechet_repo/Fred/include/curve.hpp"
 

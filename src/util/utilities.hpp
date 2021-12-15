@@ -143,9 +143,6 @@ int input_handle_hypercube(int narg, char const *argvect[], string *inf, string 
 // Fully handles the Cluster input provided to the app
 int input_handle_cluster(int narg, char const *argvect[], string *inf, string *cf, string *outf, string *update, string *assignment, bool *silhouette, bool *verbose);
 
-// Fully copies a point and returns the newly allocated one
-Point *copy_point(Point *p);
-
 void apply_floor_to_vector(vector<double> *v);
 
 #endif //PROJECT_1_UTILITIES_HPP

@@ -11,7 +11,7 @@ Curve::Curve(const Curve &curve):
 id(curve.id), points(new std::vector<Point *>()) {
 
     for(auto &point: *curve.points)
-        points->push_back(copy_point(point));
+        points->push_back(new Point(*point->get_coordinates()));
 }
 
 std::string &Curve::get_id() {

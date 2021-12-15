@@ -34,10 +34,10 @@ uint32_t estimate_window_size(vector<Curve *> *data, double(*distance)(Curve&, C
     return (uint32_t)(dist * (1.0 / subset));
 }
 
-double avg_point_size_of_dataset(Dataset &set) {
+double avg_point_size_of_dataset(std::vector<Curve *> *set) {
     double avg_size = 0;
-    for(auto &curve: *set.getData())
-        avg_size += ((double)curve->get_points()->size() / set.size());
+    for(auto &curve: *set)
+        avg_size += ((double)curve->get_points()->size() / set->size());
     return avg_size;
 }
 
@@ -45,9 +45,9 @@ double avg_point_size_of_dataset(Dataset &set) {
  * Compute the average points of all curves in the input dataset and in the query dataset separately.
  * Return approx. 4 * data dimensions * minimum of the 2 above averages.
  */
-double estimate_grid_interval(Dataset &input, Dataset &query) {
+double estimate_grid_interval(std::vector<Curve *> *input, std::vector<Curve *> *query) {
 
-    uint32_t dimensions = (*input.getData())[0]->get_data_dimensions();
+    uint32_t dimensions = (*input)[0]->get_data_dimensions();
     double avg_input_distances = avg_point_size_of_dataset(input);
     double avg_query_distances = avg_point_size_of_dataset(query);
 
@@ -55,9 +55,9 @@ double estimate_grid_interval(Dataset &input, Dataset &query) {
     return dimensions * result * 10e-4;
 }
 
-uint32_t compute_max_curve_length_(Dataset &set) {
+uint32_t compute_max_curve_length_(std::vector<Curve *> *set) {
     uint32_t max_size = 0;
-    for(auto &curve: *set.getData()) {
+    for(auto &curve: *set) {
         if (curve->get_points()->size() > max_size) {
             max_size = curve->get_points()->size();
         }
@@ -65,7 +65,7 @@ uint32_t compute_max_curve_length_(Dataset &set) {
     return max_size;
 }
 
-uint32_t compute_max_curve_length(Dataset &input, Dataset &query) {
+uint32_t compute_max_curve_length(std::vector<Curve *> *input, std::vector<Curve *> *query) {
     uint32_t max_input_curve_len = compute_max_curve_length_(input);
     uint32_t max_query_curve_len = compute_max_curve_length_(query);
     return (uint32_t)std::max(max_input_curve_len, max_query_curve_len);

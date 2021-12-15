@@ -114,11 +114,11 @@ double dot_product(vector<T> *a, vector<T> *b) {
  */
 uint32_t estimate_window_size(vector<Curve *> *data, double(*distance)(Curve&, Curve&));
 
-double avg_point_size_of_dataset(Dataset &set);
-double estimate_grid_interval(Dataset &input, Dataset &query);
+double avg_point_size_of_dataset(std::vector<Curve *> *set);
+double estimate_grid_interval(std::vector<Curve *> *input, std::vector<Curve *> *query);
 
-uint32_t compute_max_curve_length(Dataset &input, Dataset &query);
-uint32_t compute_max_curve_length_(Dataset &set);
+uint32_t compute_max_curve_length(std::vector<Curve *> *input, std::vector<Curve *> *query);
+uint32_t compute_max_curve_length_(std::vector<Curve *> *set);
 
 // Modulo operation between two numbers
 uint32_t mod(long a, uint32_t b);

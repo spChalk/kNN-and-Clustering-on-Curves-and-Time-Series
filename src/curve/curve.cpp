@@ -27,8 +27,8 @@ void Curve::filter(double pruning_threshold) {
 
 bool Curve::there_is_available_pruning_on_index(uint32_t index, double pruning_threshold) {
     return index+1 < points->size() &&
-           Metrics::euclidean(*(*points)[index-1], *(*points)[index]) <= pruning_threshold &&
-           Metrics::euclidean(*(*points)[index], *(*points)[index+1]) <= pruning_threshold;
+           Metrics::Euclidean::distance(*(*points)[index-1], *(*points)[index]) <= pruning_threshold &&
+           Metrics::Euclidean::distance(*(*points)[index], *(*points)[index+1]) <= pruning_threshold;
 }
 
 void Curve::prune_point_on_index(uint32_t index) {

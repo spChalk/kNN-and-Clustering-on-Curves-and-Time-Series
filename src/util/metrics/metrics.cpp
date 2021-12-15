@@ -9,19 +9,19 @@
 #include <stdexcept>
 #include <cmath>
 
-double Metrics::euclidean(Curve &a, Curve &b) {
+double Metrics::Euclidean::distance(Curve &a, Curve &b) {
     auto ap = a.get_points();
     auto bp = b.get_points();
     uint32_t size = std::min( ap->size(), bp->size() );
     if (size == 0) return 0;
     double total = 0;
     for (uint32_t i = 0; i != size; ++i) {
-        total += Metrics::euclidean(*ap->at(i), *bp->at(i));
+        total += Metrics::Euclidean::distance(*ap->at(i), *bp->at(i));
     }
     return total / size;
 }
 
-double Metrics::euclidean(FlattenedCurve &a, FlattenedCurve &b) {
+double Metrics::Euclidean::distance(FlattenedCurve &a, FlattenedCurve &b) {
 
     if(a.get_size() != b.get_size()) {
         std::ostringstream msg;
@@ -38,7 +38,7 @@ double Metrics::euclidean(FlattenedCurve &a, FlattenedCurve &b) {
     return sqrt(result);
 }
 
-double Metrics::euclidean(Point &a, Point &b) {
+double Metrics::Euclidean::distance(Point &a, Point &b) {
 
     if(a.get_dimensions() != b.get_dimensions()) {
         std::ostringstream msg;
@@ -56,7 +56,7 @@ double Metrics::euclidean(Point &a, Point &b) {
 }
 
 // TODO: well, gotta test this...
-double Metrics::discrete_frechet_distance(Curve &c1, Curve &c2)
+double Metrics::Discrete_Frechet::distance(Curve &c1, Curve &c2)
 {
     auto &a = *c1.get_points();
     auto &b = *c2.get_points();
@@ -65,17 +65,17 @@ double Metrics::discrete_frechet_distance(Curve &c1, Curve &c2)
     double *opt = new double[m1 * m2];
 
     // Calculate opt for 1st row (index: 0)
-    opt[0] = Metrics::euclidean(*a[0], *b[0]);
+    opt[0] = Metrics::Euclidean::distance(*a[0], *b[0]);
     auto p1 = a[0];
     for (uint32_t col=1; col != m2; ++col) {
-        opt[col] = std::max( Metrics::euclidean(*p1, *b[col]), opt[col-1] );
+        opt[col] = std::max( Metrics::Euclidean::distance(*p1, *b[col]), opt[col-1] );
     }
 
     // Calculate opt for 1st col (index: row * m2)
     auto q1 = b[0];
     for (uint32_t row=1; row != m1; ++row) {
         uint32_t index = row * m2;
-        opt[index] = std::max( Metrics::euclidean(*a[row], *q1), opt[index - m2] );
+        opt[index] = std::max( Metrics::Euclidean::distance(*a[row], *q1), opt[index - m2] );
     }
 
     // Calculate for rows [2, m1]
@@ -84,7 +84,7 @@ double Metrics::discrete_frechet_distance(Curve &c1, Curve &c2)
         for (uint32_t col=1; col != m2; ++col)
         {
             auto tmp_min = std::min( opt[(row-1)*m2 + col], std::min( opt[(row-1)*m2 + col - 1], opt[row*m2 + col - 1]) );  // wheelchair
-            opt[row * m2 + col] = std::max( Metrics::euclidean(*a[row], *b[col]), tmp_min );
+            opt[row * m2 + col] = std::max( Metrics::Euclidean::distance(*a[row], *b[col]), tmp_min );
         }
     }
 
@@ -93,7 +93,7 @@ double Metrics::discrete_frechet_distance(Curve &c1, Curve &c2)
     return ret_val;
 }
 
-double Metrics::continuous_frechet_distance(Curve &c1, Curve &c2) {
+double Metrics::Continuous_Frechet::distance(Curve &c1, Curve &c2) {
     _Curve *fc1 = c1.to_FredCurve();
     _Curve *fc2 = c2.to_FredCurve();
     auto result = Frechet::Continuous::distance(*fc1, *fc2).value;
@@ -101,7 +101,7 @@ double Metrics::continuous_frechet_distance(Curve &c1, Curve &c2) {
     return result;
 }
 
-double Metrics::continuous_frechet_distance(FlattenedCurve &c1, FlattenedCurve &c2) {
+double Metrics::Continuous_Frechet::distance(FlattenedCurve &c1, FlattenedCurve &c2) {
     _Curve *fc1 = c1.to_FredCurve();
     _Curve *fc2 = c2.to_FredCurve();
     auto result = Frechet::Continuous::distance(*fc1, *fc2).value;

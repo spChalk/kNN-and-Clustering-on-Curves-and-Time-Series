@@ -50,6 +50,7 @@ private:
 
 public:
     FlattenedCurve(Curve &normal_curve);
+    FlattenedCurve(const FlattenedCurve &curve);
     FlattenedCurve(std::string _id, std::vector<double> &_coord)
             : id(_id), points(new std::vector<double>(_coord)) {}
 

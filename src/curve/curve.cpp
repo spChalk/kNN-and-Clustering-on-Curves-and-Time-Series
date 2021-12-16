@@ -122,6 +122,13 @@ FlattenedCurve::FlattenedCurve(Curve &normal_curve)
     }
 }
 
+FlattenedCurve::FlattenedCurve(const FlattenedCurve& curve):
+id(curve.id), points(new vector<double>()) {
+    for(auto &coord: *points) {
+        points->push_back(coord);
+    }
+}
+
 FlattenedCurve::~FlattenedCurve() {
     delete points;
 }

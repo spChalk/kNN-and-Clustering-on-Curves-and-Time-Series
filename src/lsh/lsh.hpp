@@ -27,7 +27,8 @@ public:
     void nearest_neighbor(Curve *query, std::tuple<double, string> &result);
 
     // Run Range-search
-    void range_search(Curve *query, std::list<tuple<Curve *, double>> &results);
+    template<typename _curve_T>
+    void range_search(_curve_T *query, std::list<tuple<Curve *, double>> &results);
 
     virtual ~LSH();
 
@@ -59,8 +60,12 @@ private:
     flattened_curves *get_flattened_family(std::string &label);
 
     void curves_preprocess(std::vector<Curve *> &curves, const std::string& type);
-    void curve_preprocess(Curve &curve, const string &type);
+
+    template<typename _curve_T>
+    void curve_preprocess(_curve_T &c, const string &type);
+
     FlattenedCurve *euclidean_preprocess(Curve &curve);
+    FlattenedCurve *euclidean_preprocess(FlattenedCurve &curve);
     FlattenedCurve *cont_frechet_preprocess(Curve &curve, uint32_t index);
     FlattenedCurve *discr_frechet_preprocess(Curve &curve, uint32_t index);
 

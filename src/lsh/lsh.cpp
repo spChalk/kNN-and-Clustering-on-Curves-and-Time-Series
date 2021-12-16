@@ -84,26 +84,27 @@ void LSH::curves_preprocess(std::vector<Curve *> &curves, const std::string& typ
         curve_preprocess(*curve, type);
 }
 
-void LSH::curve_preprocess(Curve &curve, const string &type) {
+template<typename _curve_T>
+void LSH::curve_preprocess(_curve_T &c, const string &type) {
 
     // If the curve already exists, do not re-insert it.
-    if(label_to_curve->find(curve.get_id()) != label_to_curve->end())
+    if(label_to_curve->find(c.get_id()) != label_to_curve->end())
         return;
 
-    label_to_curve->insert({curve.get_id(), &curve});
+    label_to_curve->insert({c.get_id(), &c});
 
     if(type == "input")
         L_flattened_inputs->push_back(new flattened_curves());
     else {
         L_flattened_queries->push_back(new flattened_curves());
-        label_to_index_in_fl_queries->insert({curve.get_id(), L_flattened_queries->size() - 1});
+        label_to_index_in_fl_queries->insert({c.get_id(), L_flattened_queries->size() - 1});
     }
 
     for(uint32_t j = 0; j < maps->size(); ++j) {
 
-        auto flattened_curve = metric_id == EUCLIDEAN ? euclidean_preprocess(curve) :
-                               metric_id == CONTINUOUS_FRECHET ? cont_frechet_preprocess(curve, j) :
-                               discr_frechet_preprocess(curve, j);
+        auto flattened_curve = metric_id == EUCLIDEAN ? euclidean_preprocess(c) :
+                               metric_id == CONTINUOUS_FRECHET ? cont_frechet_preprocess(c, j) :
+                               discr_frechet_preprocess(c, j);
 
         if(type == "input")
             L_flattened_inputs->back()->push_back(flattened_curve);
@@ -116,6 +117,10 @@ FlattenedCurve *LSH::euclidean_preprocess(Curve &curve) {
     auto _curve = curve;
     _curve.erase_time_axis();
     return _curve.flatten();
+}
+
+FlattenedCurve *LSH::euclidean_preprocess(FlattenedCurve &curve) {
+    return new FlattenedCurve(curve);
 }
 
 FlattenedCurve *LSH::cont_frechet_preprocess(Curve &curve, uint32_t index) {
@@ -292,7 +297,8 @@ void LSH::nearest_neighbor(Curve *query, std::tuple<double, string> &result) {
     write_data_to_out_file(avg_lsh_time_taken, abg_brutef_time_taken, maf, out_path);*/
 }
 
-void LSH::range_search(Curve *query, list<tuple<Curve *, double>> &results) {
+template<typename _curve_T>
+void LSH::range_search(_curve_T *query, list<tuple<Curve *, double>> &results) {
     // query preprocess
     curve_preprocess(*query, "query");
     auto label = query->get_id();

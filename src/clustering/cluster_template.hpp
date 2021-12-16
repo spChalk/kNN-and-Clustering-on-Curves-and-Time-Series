@@ -33,7 +33,9 @@ private:
     typedef void (internal_cluster::*__CLUSTER_TMPL_MODULE_assign_func)();
     typedef void (internal_cluster::*__CLUSTER_TMPL_MODULE_update_func)();
     
-    Dataset &dataset;
+    // Dataset &dataset;
+
+    std::vector<ItemType *> *dataset = nullptr;
 
     uint8_t assign_method;  /* 0: Classic, 1: LSH, 2: Hypercube */
     uint8_t update_method;  /* 0: Vector,  1: Curve             */
@@ -80,7 +82,10 @@ private:
     void delete_assignment();
 
 public:
-    internal_cluster(string &config_path, Dataset &dataset, DistFunc dist_func, const string &mode="Classic");
+    // This modules takes as input the (completely) set-up underlying
+    // structure (LSH or HC or None) and a vector of the Train Set items
+    // Caller is required to initialize these values
+    internal_cluster(uint32_t _num_clusters, std::vector<ItemType *> *dataset, DistFunc dist_func, uint8_t asgn_method, uint8_t updt_method, LSH *lsh_ds, hypercube *hc_ds);
     ~internal_cluster();
     void perform_clustering();
     void write_results_to_file(const std::string & out_path, bool verbose=false, bool evalution_on=true);

@@ -10,55 +10,24 @@ using std::unordered_multimap;
 using std::set;
 using std::get;
 
-#if 0
-
 /////////////////////////////////////////////////////////////////////
 // Constructor - Destructor(s)
 
-cluster::cluster(string &config_path, Dataset &dataset, distance_f _distance_f, const string& mode)
+template <typename ItemType, typename DistFunc>
+internal_cluster<ItemType, DistFunc>::
+internal_cluster(uint32_t _num_clusters, std::vector<ItemType *> *_dataset, DistFunc _dist_func, uint8_t asgn_method, uint8_t updt_method, LSH *_lsh_ds, hypercube *_hc_ds)
 :
-dataset(dataset),
-dist_func(_distance_f),
-centroids(new set<Point *>()),
-final_assign(new unordered_map<Point *, vector<Point *> *>())
-{
-    // Defaults
-    uint32_t _num_of_clusters = 1;
-    uint32_t _num_of_ht = 3;
-    uint32_t _num_of_hf = 4;
-    uint32_t _max_num_of_M_hypercube = 10;
-    uint32_t _num_of_hypercube_dims = 3;
-    uint32_t _num_of_probes = 2;
+dataset(_dataset),
+assign_method(asgn_method),
+update_method(updt_method),
+num_of_clusters(_num_clusters),
+dist_func(_dist_func),
+centroids(new set<ItemType *>()),
+lsh_ds(_lsh_ds),
+hc_ds(_hc_ds),
+final_assign(new unordered_map<ItemType *, vector<ItemType *> *>())
+{ }
 
-    // Read the configuration file
-    read_cluster_config_file(config_path, &_num_of_clusters, &_num_of_ht, &_num_of_hf,
-                             &_max_num_of_M_hypercube, &_num_of_hypercube_dims, &_num_of_probes);
-    // If the given number of clusters is greater than the points present in dataset, exit
-    if(_num_of_clusters >= dataset.getData()->size()) {
-        ostringstream msg;
-        msg << "Error, data size must be more than cluster size." << endl;
-        throw runtime_error(msg.str());
-    }
-    this->num_of_clusters = _num_of_clusters;
-
-    // Choose the execution method
-    if (mode == "Classic")
-        this->method = 0;
-    else if (mode == "LSH") {
-        this->method = 1;
-        this->lsh_ds = new LSH(this->dataset.getData(), this->dist_func, _num_of_ht, _num_of_hf);
-    }
-    else if (mode == "Hypercube") {
-        this->method = 2;
-        this->hc_ds = new hypercube(this->dataset, this->dist_func, _num_of_hypercube_dims, _max_num_of_M_hypercube, _num_of_probes);
-    }
-    else {
-        ostringstream msg;
-        msg << "Error, Assignment Method should be one of the following:\n> Classic\n> LSH\n> Hypercube\n." << endl;
-        throw runtime_error(msg.str());
-    }
-}
-#endif
 // Fully delete the app's centroids
 template <typename ItemType, typename DistFunc>
 void 
@@ -104,7 +73,7 @@ void
 internal_cluster<ItemType, DistFunc>::
 assign_exact_lloyds()
 {
-    for(auto datapoint: *(this->dataset.getData())) {
+    for(auto datapoint: *(this->dataset)) {
 
         // Initialize minimum distance to a large value
         double min_dist = DBL_MAX;
@@ -172,7 +141,7 @@ internal_cluster<ItemType, DistFunc>::
 reverse_assignment(C cont)
 {
     // Insert every point from the dataset vector in the `unassigned_points` set
-    auto unassigned_points = std::unordered_set<ItemType *>(dataset.getData()->begin(), dataset.getData()->end());
+    auto unassigned_points = std::unordered_set<ItemType *>(dataset->begin(), dataset->end());
 
     // Get initial radius
     double radius = this->get_min_dist_between_2_centroids();
@@ -318,7 +287,7 @@ void
 internal_cluster<ItemType, DistFunc>::
 initialize_centroids()
 {
-    auto data = this->dataset.getData();
+    auto data = this->dataset;
     // Pick a random point for initial centroid
     int index = Distributions::uniform<int>(0, (long)data->size());
     this->centroids->insert( ItemType(*((*data)[index])) );  // TODO : check this
@@ -563,7 +532,7 @@ evaluate(std::list<double> &result_per_cluster)
         result_per_cluster.push_back(s);
     }
 
-    overall /= this->dataset.getData()->size();
+    overall /= this->dataset->size();
     return overall;
 }
 

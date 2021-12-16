@@ -43,7 +43,7 @@ double avg_point_size_of_dataset(std::vector<Curve *> *set) {
 
 /*
  * Compute the average points of all curves in the input dataset.
- * Return approx. 4 * data dimensions * the above average.
+ * Return approx. 10e-4 * data dimensions * the above average.
  */
 double estimate_grid_interval(std::vector<Curve *> *input) {
 

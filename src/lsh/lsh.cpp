@@ -17,11 +17,10 @@ using std::list;
 using std::string;
 using std::get;
 
-// TODO: Tune pruning threshold (tuning threshold is used in time-series' dim. reduction)
+// TODO: Tune PRUNING_THRESHOLD (tuning threshold is used in time-series' dim. reduction)
 // TODO: Fine-tune grid interval (δ)
 // TODO: See if padding num is good (currently its max len of input data)
-// TODO: Tune window size
-
+// TODO: Tune WINDOW_SIZE
 
 #define GET_DURATION(START, END) (std::chrono::duration_cast<std::chrono::nanoseconds>((END) - (START)).count() * 1e-9)
 #define GET_CURR_TIME() (std::chrono::high_resolution_clock::now())

@@ -29,7 +29,6 @@ bool Grid::are_equal_consecutive_vectors(std::vector<Point *> *curve_data,
 }
 
 void Grid::snap(vector<double> *_vector, double interval) {
-    // TODO: Maybe overload operators in order to simplify this circus below
     subtract_scalar_from_vector<double>(_vector, noise);
     divide_vector_by_scalar<double>(_vector, interval);
     add_scalar_to_vector<double>(_vector, 0.5);

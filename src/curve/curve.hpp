@@ -10,7 +10,6 @@ class FlattenedCurve;
 class Curve {
 
 public:
-    // TODO DO A DESTRUCTOR
     Curve(std::string &id, std::vector<Point *> *points);
     Curve(const Curve &curve);
 
@@ -51,7 +50,7 @@ private:
 public:
     FlattenedCurve(Curve &normal_curve);
     FlattenedCurve(const FlattenedCurve &curve);
-    FlattenedCurve(std::string _id, std::vector<double> &_coord)
+    FlattenedCurve(std::string &_id, std::vector<double> &_coord)
             : id(_id), points(new std::vector<double>(_coord)) {}
 
     ~FlattenedCurve();

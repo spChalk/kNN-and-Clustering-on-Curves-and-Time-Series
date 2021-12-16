@@ -11,11 +11,9 @@ private:
     double grid_interval;
     double noise;
 
-    //void initialize_noise(uint32_t dimensions);
     void map_to_grid(Curve &curve);
     void snap(vector<double> *_vector, double interval);
     bool are_equal_consecutive_vectors(std::vector<Point *> *curve_data, uint32_t index);
-    //void add_noise(Curve &curve);
 
 public:
     explicit Grid(double grid_interval);

@@ -17,17 +17,17 @@ using std::list;
 using std::string;
 using std::get;
 
-// TODO: Μaybe compute pruning threshold based in the avg point distances of curves
-// TODO: fine-tune grid interval
-// TODO: euclidean runs on flattened curves ?
-// TODO: see if padding num is good
-// TODO: max curve len is ok to be fixed?
+// TODO: Tune pruning threshold (tuning threshold is used in time-series' dim. reduction)
+// TODO: Fine-tune grid interval (δ)
+// TODO: See if padding num is good (currently its max len of input data)
+// TODO: Tune window size
 
 
 #define GET_DURATION(START, END) (std::chrono::duration_cast<std::chrono::nanoseconds>((END) - (START)).count() * 1e-9)
 #define GET_CURR_TIME() (std::chrono::high_resolution_clock::now())
 
 #define PRUNING_THRESHOLD 10
+#define WINDOW_SIZE 1000
 
 LSH::LSH(Dataset &input, const enum metrics &_metric, uint32_t num_ht, uint32_t num_hfs, double _radius):
         maps(new vector< hashtable *>()),
@@ -44,15 +44,12 @@ LSH::LSH(Dataset &input, const enum metrics &_metric, uint32_t num_ht, uint32_t 
 
     if(metric_id == DISCRETE_FRECHET) padding_len *= 2;
 
-    // Automatically compute the window size
-    uint32_t window = 2000;//estimate_window_size(raw_inputs, Metrics::Discrete_Frechet::distance);
-
     for (uint32_t i = 0; i < num_ht; i++) {
         /* Automatically scale the size of the Hash family's tables by computing:
             N / 2 ^ (log_10(N) - 1) */
         uint32_t size = raw_inputs->size() /
                         (uint32_t) pow(2, (log10((double) raw_inputs->size()) - 1));
-        this->maps->push_back(new hashtable(size, new amplified_hf(num_hfs, window, padding_len)));
+        this->maps->push_back(new hashtable(size, new amplified_hf(num_hfs, WINDOW_SIZE, padding_len)));
     }
 
     set_metrics_and_preprocess();
@@ -61,6 +58,7 @@ LSH::LSH(Dataset &input, const enum metrics &_metric, uint32_t num_ht, uint32_t 
     this->load();
 }
 
+// Set the appropriate metrics and preprocess the input data
 void LSH::set_metrics_and_preprocess() {
 
     double grid_interval = estimate_grid_interval(raw_inputs);
@@ -71,7 +69,8 @@ void LSH::set_metrics_and_preprocess() {
         for (int i = 0; i < maps->size(); ++i)
             grids->push_back(new Grid(grid_interval));
 
-        // TODO: WATCH OUT THE CAST! IT IS A POSSIBLE FUTURE SEG.
+        // TODO: WATCH OUT THE CAST! IT IS A POSSIBLE FUTURE SEG
+        // (if you want your cont. frechet to receive flattened curves as args).
         metric = metric_id == CONTINUOUS_FRECHET ? (distance_f)Metrics::Continuous_Frechet::distance :
                  Metrics::Discrete_Frechet::distance;
     }
@@ -97,6 +96,7 @@ void LSH::curve_preprocess(_curve_T &c, const string &type) {
         L_flattened_inputs->push_back(new flattened_curves());
     else {
         L_flattened_queries->push_back(new flattened_curves());
+        // Keep the query's index in order to remember it later, if needed.
         label_to_index_in_fl_queries->insert({c.get_id(), L_flattened_queries->size() - 1});
     }
 
@@ -242,6 +242,7 @@ void LSH::nn(flattened_curves &query_family, std::tuple<double, string> &result)
     }
 }
 
+// Receives a label and returns the corresponding query's gridded family.
 flattened_curves *LSH::get_flattened_family(std::string &label) {
     uint32_t index = label_to_index_in_fl_queries->find(label)->second;
     assert(index <= L_flattened_queries->size());
@@ -250,15 +251,15 @@ flattened_curves *LSH::get_flattened_family(std::string &label) {
 
 void LSH::nearest_neighbor(Curve *query, std::tuple<double, string> &result) {
 
-    // query preprocess
+    // Preprocess query, if needed
     curve_preprocess(*query, "query");
     auto label = query->get_id();
     // Get the query's flattened family from L_flattened_queries
     auto query_family = get_flattened_family(label);
 
+    // Run NN
     nn(*query_family, result);
 
-    // process
 
     /*double avg_lsh_time_taken = 0;
     double abg_brutef_time_taken = 0;
@@ -299,7 +300,7 @@ void LSH::nearest_neighbor(Curve *query, std::tuple<double, string> &result) {
 
 template<typename _curve_T>
 void LSH::range_search(_curve_T *query, list<tuple<Curve *, double>> &results) {
-    // query preprocess
+
     curve_preprocess(*query, "query");
     auto label = query->get_id();
     // Get the query's flattened family from L_flattened_queries

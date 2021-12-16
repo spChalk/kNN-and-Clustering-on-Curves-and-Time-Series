@@ -8,6 +8,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <cmath>
+#include <memory>
 
 double Metrics::Euclidean::distance(Curve &a, Curve &b) {
     auto ap = a.get_points();
@@ -55,6 +56,8 @@ double Metrics::Euclidean::distance(Point &a, Point &b) {
     return sqrt(result);
 }
 
+static double *opt_array = nullptr;
+
 // TODO: well, gotta test this...
 double Metrics::Discrete_Frechet::distance(Curve &c1, Curve &c2)
 {
@@ -62,7 +65,17 @@ double Metrics::Discrete_Frechet::distance(Curve &c1, Curve &c2)
     auto &b = *c2.get_points();
     uint32_t m1 = a.size();
     uint32_t m2 = b.size();
-    double *opt = new double[m1 * m2];
+    
+
+    auto& opt = opt_array;
+
+    if (opt != nullptr)
+        delete[] opt;
+
+    opt = new double[m1 * m2];
+
+    std::shared_ptr<double> shared_good(opt, std::default_delete<double[]>());
+
 
     // Calculate opt for 1st row (index: 0)
     opt[0] = Metrics::Euclidean::distance(*a[0], *b[0]);
@@ -89,9 +102,52 @@ double Metrics::Discrete_Frechet::distance(Curve &c1, Curve &c2)
     }
 
     double ret_val = opt[m1 * m2 - 1];
-    delete[] opt;
     return ret_val;
 }
+
+#define MAX_OF_THREE(X, Y, Z) { \
+    X > Y ? (X > Z ? 0 : 2) \
+          : (Y > Z ? 1 : 2) \
+}
+
+void Metrics::Discrete_Frechet::optimal_traversal(Curve &c1, Curve &c2, std::list<std::tuple<uint32_t, uint32_t>> &lp)
+{
+    auto& opt = opt_array;
+
+    auto &a = *c1.get_points();
+    auto &b = *c2.get_points();
+    uint32_t m1 = a.size();
+    uint32_t m2 = b.size();
+
+    uint32_t p = m1, q = m2;  // TODO : test this - needs tweaking
+    std::tuple<uint32_t, uint32_t> t = std::make_tuple(p, q);
+    lp.push_front(t);
+
+    while (p && q)
+    {
+        // TODO : test this - needs tweaking
+        double x = opt[p * m2 + q];
+        double y = opt[p * m2 + q-1];
+        double z = opt[(p-1)*m2 + q-1];
+        uint32_t minIdx = (int) MAX_OF_THREE(x, y, z);
+
+        if (minIdx == 0) {
+            t = std::make_tuple(--p, q);
+        }
+        else if (minIdx == 1) {
+            t = std::make_tuple(p, --q);
+        }
+        else {
+            t = std::make_tuple(--p, --q);
+        }
+        lp.push_front(t);
+    }
+
+    delete[] opt;
+}
+
+void Metrics::Discrete_Frechet::clean() { delete[] opt_array; }
+
 
 double Metrics::Continuous_Frechet::distance(Curve &c1, Curve &c2) {
     _Curve *fc1 = c1.to_FredCurve();

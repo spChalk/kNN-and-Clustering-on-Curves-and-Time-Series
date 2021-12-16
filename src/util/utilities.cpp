@@ -42,20 +42,17 @@ double avg_point_size_of_dataset(std::vector<Curve *> *set) {
 }
 
 /*
- * Compute the average points of all curves in the input dataset and in the query dataset separately.
- * Return approx. 4 * data dimensions * minimum of the 2 above averages.
+ * Compute the average points of all curves in the input dataset.
+ * Return approx. 4 * data dimensions * the above average.
  */
-double estimate_grid_interval(std::vector<Curve *> *input, std::vector<Curve *> *query) {
+double estimate_grid_interval(std::vector<Curve *> *input) {
 
     uint32_t dimensions = (*input)[0]->get_data_dimensions();
     double avg_input_distances = avg_point_size_of_dataset(input);
-    double avg_query_distances = avg_point_size_of_dataset(query);
-
-    auto result = (uint32_t)std::max(avg_input_distances, avg_query_distances);
-    return dimensions * result * 10e-4;
+    return dimensions * avg_input_distances * 10e-4;
 }
 
-uint32_t compute_max_curve_length_(std::vector<Curve *> *set) {
+uint32_t compute_max_curve_length(std::vector<Curve *> *set) {
     uint32_t max_size = 0;
     for(auto &curve: *set) {
         if (curve->get_points()->size() > max_size) {
@@ -63,12 +60,6 @@ uint32_t compute_max_curve_length_(std::vector<Curve *> *set) {
         }
     }
     return max_size;
-}
-
-uint32_t compute_max_curve_length(std::vector<Curve *> *input, std::vector<Curve *> *query) {
-    uint32_t max_input_curve_len = compute_max_curve_length_(input);
-    uint32_t max_query_curve_len = compute_max_curve_length_(query);
-    return (uint32_t)std::max(max_input_curve_len, max_query_curve_len);
 }
 
 // Modulo operation between two numbers

@@ -18,16 +18,16 @@ typedef std::vector< flattened_curves *> vector_of_flattened_curves;
 class LSH {
 
 public:
-    LSH(Dataset &input, Dataset &queries, const metrics& metric, uint32_t num_ht = 5, uint32_t num_hfs = 4,
+    LSH(Dataset &input, const metrics& metric, uint32_t num_ht = 5, uint32_t num_hfs = 4,
         double radius = 10000);
 
     // Load data into the structure
     void load();
 
-    void nearest_neighbor(const std::string &out_path);
+    void nearest_neighbor(Curve *query, std::tuple<double, string> &result);
 
     // Run Range-search
-    void range_search(flattened_curves &query_family, std::list<tuple<Curve *, double>> &results);
+    void range_search(Curve *query, std::list<tuple<Curve *, double>> &results);
 
     virtual ~LSH();
 
@@ -47,21 +47,27 @@ private:
     // We keep initial inputs here
     std::vector<Curve *> *raw_inputs;
     std::vector<Curve *> *raw_queries;
+    uint32_t padding_len;
 
     // We store flattened vectors (for L grids each) here
     vector_of_flattened_curves *L_flattened_inputs;
     vector_of_flattened_curves *L_flattened_queries;
 
     std::unordered_map<std::string, Curve *> *label_to_curve;
+    std::unordered_map<std::string, uint32_t> *label_to_index_in_fl_queries;
 
-    void curves_preprocess(std::vector<Curve *> &curves, double pr_t, uint32_t max_c_len, const std::string& type);
-    void curves_preprocess(std::vector<Curve *> &curves, uint32_t max_c_len, const std::string& type);
-    void curves_preprocess(std::vector<Curve *> &curves, const std::string& type, uint32_t num_ht);
+    flattened_curves *get_flattened_family(std::string &label);
 
-    // Run K Nearest Neighbours
+    void curves_preprocess(std::vector<Curve *> &curves, const std::string& type);
+    void curve_preprocess(Curve &curve, const string &type);
+    FlattenedCurve *euclidean_preprocess(Curve &curve);
+    FlattenedCurve *cont_frechet_preprocess(Curve &curve, uint32_t index);
+    FlattenedCurve *discr_frechet_preprocess(Curve &curve, uint32_t index);
+
     void nn(flattened_curves &query_family, std::tuple<double, string>& result);
+    void _range_search(flattened_curves &query_family, std::list<tuple<Curve *, double>> &results);
 
-    uint32_t set_metrics_and_preprocess(uint32_t num_ht);
+    void set_metrics_and_preprocess();
 
     void delete_flattened_inputs();
 };

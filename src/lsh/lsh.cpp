@@ -17,21 +17,32 @@ using std::list;
 using std::string;
 using std::get;
 
+// TODO: Μaybe compute pruning threshold based in the avg point distances of curves
+// TODO: fine-tune grid interval
+// TODO: euclidean runs on flattened curves ?
+// TODO: see if padding num is good
+// TODO: max curve len is ok to be fixed?
+
+
 #define GET_DURATION(START, END) (std::chrono::duration_cast<std::chrono::nanoseconds>((END) - (START)).count() * 1e-9)
 #define GET_CURR_TIME() (std::chrono::high_resolution_clock::now())
 
-LSH::LSH(Dataset &input, Dataset &queries, const enum metrics &_metric, uint32_t num_ht, uint32_t num_hfs, double _radius):
+#define PRUNING_THRESHOLD 10
+
+LSH::LSH(Dataset &input, const enum metrics &_metric, uint32_t num_ht, uint32_t num_hfs, double _radius):
         maps(new vector< hashtable *>()),
         radius(_radius),
         metric_id(_metric),
         grids(new std::vector<Grid *>()),
         raw_inputs(input.getData()),
-        raw_queries(queries.getData()),
+        raw_queries(nullptr),
+        padding_len(compute_max_curve_length(input.getData())),
         L_flattened_inputs(new vector_of_flattened_curves()),
         L_flattened_queries(new vector_of_flattened_curves()),
-        label_to_curve(new std::unordered_map<std::string, Curve *>()) {
+        label_to_curve(new std::unordered_map<std::string, Curve *>()),
+        label_to_index_in_fl_queries(new std::unordered_map<std::string, uint32_t>()) {
 
-    auto max_curve_length = set_metrics_and_preprocess(num_ht);
+    if(metric_id == DISCRETE_FRECHET) padding_len *= 2;
 
     // Automatically compute the window size
     uint32_t window = 2000;//estimate_window_size(raw_inputs, Metrics::Discrete_Frechet::distance);
@@ -41,126 +52,89 @@ LSH::LSH(Dataset &input, Dataset &queries, const enum metrics &_metric, uint32_t
             N / 2 ^ (log_10(N) - 1) */
         uint32_t size = raw_inputs->size() /
                         (uint32_t) pow(2, (log10((double) raw_inputs->size()) - 1));
-        this->maps->push_back(new hashtable(size, new amplified_hf(num_hfs, window, max_curve_length)));
+        this->maps->push_back(new hashtable(size, new amplified_hf(num_hfs, window, padding_len)));
     }
+
+    set_metrics_and_preprocess();
+
     // Load the data into the structure
     this->load();
 }
 
-uint32_t LSH::set_metrics_and_preprocess(uint32_t num_ht) {
+void LSH::set_metrics_and_preprocess() {
 
-    // TODO: fine-tune this
-    double grid_interval = estimate_grid_interval(raw_inputs, raw_queries);
-    uint32_t max_curve_length = compute_max_curve_length(raw_inputs, raw_queries);
+    double grid_interval = estimate_grid_interval(raw_inputs);
 
-    if(metric_id == CONTINUOUS_FRECHET) {
-        for (int i = 0; i < num_ht; ++i)
-            grids->push_back(new Grid(grid_interval));
-
-        metric = Metrics::Continuous_Frechet::distance;
-        // TODO: Μaybe compute it based in the avg point distances of curves
-        double pruning_threshold = 10;
-        curves_preprocess(*raw_inputs, pruning_threshold, max_curve_length, "input");
-        curves_preprocess(*raw_queries, pruning_threshold, max_curve_length, "query");
-    }
-    else if(metric_id == DISCRETE_FRECHET) {
-        for (int i = 0; i < num_ht; ++i)
-            grids->push_back(new Grid(grid_interval));
-
-        metric = Metrics::Discrete_Frechet::distance;
-        // WATCH OUT: max_curve_len is doubled because in discrete frechet we flatten the 2D curves
-        max_curve_length *= 2;
-        curves_preprocess(*raw_inputs, max_curve_length, "input");
-        curves_preprocess(*raw_queries, max_curve_length, "query");
-    }
-    else {
-        // TODO: euclidean runs on flattened curves
+    if(metric_id == EUCLIDEAN)
         metric = Metrics::Euclidean::distance;
-        curves_preprocess(*raw_inputs, "input", num_ht);
-        curves_preprocess(*raw_queries, "query", num_ht);
+    else {
+        for (int i = 0; i < maps->size(); ++i)
+            grids->push_back(new Grid(grid_interval));
+
+        // TODO: WATCH OUT THE CAST! IT IS A POSSIBLE FUTURE SEG.
+        metric = metric_id == CONTINUOUS_FRECHET ? (distance_f)Metrics::Continuous_Frechet::distance :
+                 Metrics::Discrete_Frechet::distance;
     }
-    return max_curve_length;
+
+    curves_preprocess(*raw_inputs, "input");
 }
 
-void LSH::curves_preprocess(std::vector<Curve *> &curves, const std::string& type, uint32_t num_ht) {
-    int i = 0;
-    for(auto & curve: curves) {
-        label_to_curve->insert({curve->get_id(), curve});
-
-        for(uint32_t j = 0; j < num_ht; ++j) {
-            auto _curve = *curve;
-            _curve.erase_time_axis();
-            auto flattened_curve = _curve.flatten();
-            if (type == "input") {
-                if (L_flattened_inputs->size() < i + 1)
-                    L_flattened_inputs->push_back(new flattened_curves());
-                (*L_flattened_inputs)[i]->push_back(flattened_curve);
-            } else {
-                if (L_flattened_queries->size() < i + 1)
-                    L_flattened_queries->push_back(new flattened_curves());
-                (*L_flattened_queries)[i]->push_back(flattened_curve);
-            }
-        }
-        i++;
-    }
+void LSH::curves_preprocess(std::vector<Curve *> &curves, const std::string& type) {
+    for(auto & curve: curves)
+        curve_preprocess(*curve, type);
 }
 
-void LSH::curves_preprocess(std::vector<Curve *> &curves, double pruning_threshold, uint32_t max_curve_length, const std::string& type) {
-    int i = 0;
-    for(auto & curve: curves) {
-        label_to_curve->insert({curve->get_id(), curve});
+void LSH::curve_preprocess(Curve &curve, const string &type) {
 
-        for(auto &grid: *grids) {
-            auto _curve = *curve;
-            _curve.filter(pruning_threshold);
-            _curve.erase_time_axis();
-            grid->fit(_curve);
-            _curve.min_max_filter();
-            //TODO: see if padding num is good
-            _curve.apply_padding(max_curve_length);
-            auto flattened_curve = _curve.flatten();
+    // If the curve already exists, do not re-insert it.
+    if(label_to_curve->find(curve.get_id()) != label_to_curve->end())
+        return;
 
-            if (type == "input") {
-                if (L_flattened_inputs->size() < i + 1)
-                    L_flattened_inputs->push_back(new flattened_curves());
-                (*L_flattened_inputs)[i]->push_back(flattened_curve);
-            } else {
-                if (L_flattened_queries->size() < i + 1)
-                    L_flattened_queries->push_back(new flattened_curves());
-                (*L_flattened_queries)[i]->push_back(flattened_curve);
-            }
-        }
-        i++;
+    label_to_curve->insert({curve.get_id(), &curve});
+
+    if(type == "input")
+        L_flattened_inputs->push_back(new flattened_curves());
+    else {
+        L_flattened_queries->push_back(new flattened_curves());
+        label_to_index_in_fl_queries->insert({curve.get_id(), L_flattened_queries->size() - 1});
+    }
+
+    for(uint32_t j = 0; j < maps->size(); ++j) {
+
+        auto flattened_curve = metric_id == EUCLIDEAN ? euclidean_preprocess(curve) :
+                               metric_id == CONTINUOUS_FRECHET ? cont_frechet_preprocess(curve, j) :
+                               discr_frechet_preprocess(curve, j);
+
+        if(type == "input")
+            L_flattened_inputs->back()->push_back(flattened_curve);
+        else
+            L_flattened_queries->back()->push_back(flattened_curve);
     }
 }
 
-void LSH::curves_preprocess(std::vector<Curve *> &curves, uint32_t max_curve_length, const std::string& type) {
+FlattenedCurve *LSH::euclidean_preprocess(Curve &curve) {
+    auto _curve = curve;
+    _curve.erase_time_axis();
+    return _curve.flatten();
+}
 
-    int i = 0;
-    for(auto &curve: curves) {
-        label_to_curve->insert({curve->get_id(), curve});
+FlattenedCurve *LSH::cont_frechet_preprocess(Curve &curve, uint32_t index) {
+    auto _curve = curve;
+    _curve.filter(PRUNING_THRESHOLD);
+    _curve.erase_time_axis();
+    (*grids)[index]->fit(_curve);
+    _curve.min_max_filter();
+    _curve.apply_padding(padding_len);
+    return _curve.flatten();
+}
 
-        for(auto &grid: *grids) {
-            auto _curve = *curve;
-            grid->fit(_curve);
-            grid->remove_consecutive_duplicates(_curve);
-
-            auto flattened_curve = _curve.flatten();
-            flattened_curve->apply_padding(max_curve_length);
-
-            if(type == "input") {
-                if(L_flattened_inputs->size() < i+1)
-                    L_flattened_inputs->push_back(new flattened_curves());
-                (*L_flattened_inputs)[i]->push_back(flattened_curve);
-            }
-            else {
-                if(L_flattened_queries->size() < i+1)
-                    L_flattened_queries->push_back(new flattened_curves());
-                (*L_flattened_queries)[i]->push_back(flattened_curve);
-            }
-        }
-        i++;
-    }
+FlattenedCurve *LSH::discr_frechet_preprocess(Curve &curve, uint32_t index) {
+    auto _curve = curve;
+    (*grids)[index]->fit(_curve);
+    (*grids)[index]->remove_consecutive_duplicates(_curve);
+    auto flattened_curve = _curve.flatten();
+    flattened_curve->apply_padding(padding_len);
+    return flattened_curve;
 }
 
 void LSH::delete_flattened_inputs() {
@@ -196,6 +170,9 @@ LSH::~LSH() {
 
     label_to_curve->clear();
     delete label_to_curve;
+
+    label_to_index_in_fl_queries->clear();
+    delete label_to_index_in_fl_queries;
 }
 
 /*
@@ -208,9 +185,8 @@ LSH::~LSH() {
 void LSH::load() {
     int i = 0;
     for(auto & map : *this->maps) {
-        for (auto curve_group: *L_flattened_inputs) {
+        for (auto curve_group: *L_flattened_inputs)
             map->insert((*curve_group)[i]);
-        }
         i++;
     }
 }
@@ -261,9 +237,25 @@ void LSH::nn(flattened_curves &query_family, std::tuple<double, string> &result)
     }
 }
 
-void LSH::nearest_neighbor(const std::string &out_path) {
+flattened_curves *LSH::get_flattened_family(std::string &label) {
+    uint32_t index = label_to_index_in_fl_queries->find(label)->second;
+    assert(index <= L_flattened_queries->size());
+    return (*L_flattened_queries)[index];
+}
 
-    double avg_lsh_time_taken = 0;
+void LSH::nearest_neighbor(Curve *query, std::tuple<double, string> &result) {
+
+    // query preprocess
+    curve_preprocess(*query, "query");
+    auto label = query->get_id();
+    // Get the query's flattened family from L_flattened_queries
+    auto query_family = get_flattened_family(label);
+
+    nn(*query_family, result);
+
+    // process
+
+    /*double avg_lsh_time_taken = 0;
     double abg_brutef_time_taken = 0;
     double maf = 0;
 
@@ -290,18 +282,27 @@ void LSH::nearest_neighbor(const std::string &out_path) {
         abg_brutef_time_taken += (brutef_time_taken / raw_queries->size());
 
         double candidate_maf = std::get<0>(top_lsh) / std::get<0>(top_brutef);
-        if(maf > std::numeric_limits<double>::max() - 10e5 && maf < candidate_maf)
+        if(std::get<0>(top_lsh) < std::numeric_limits<double>::max() - 10e5 && maf < candidate_maf)
             maf = candidate_maf;
 
         write_data_to_out_file(label, top_lsh, top_brutef, out_path);
 
         i++;
     }
-    write_data_to_out_file(avg_lsh_time_taken, abg_brutef_time_taken, maf, out_path);
+    write_data_to_out_file(avg_lsh_time_taken, abg_brutef_time_taken, maf, out_path);*/
+}
+
+void LSH::range_search(Curve *query, list<tuple<Curve *, double>> &results) {
+    // query preprocess
+    curve_preprocess(*query, "query");
+    auto label = query->get_id();
+    // Get the query's flattened family from L_flattened_queries
+    auto query_family = get_flattened_family(label);
+    _range_search(*query_family, results);
 }
 
 // Run Range-search
-void LSH::range_search(flattened_curves &query_family, list<tuple<Curve *, double>> &results) {
+void LSH::_range_search(flattened_curves &query_family, list<tuple<Curve *, double>> &results) {
 
     // Save computed distances
     auto dist_cache = unordered_map<string, double>();

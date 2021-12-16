@@ -11,14 +11,16 @@ int main(int argc, char const *argv[]) {
     auto dataset = Dataset(input_path);
     auto queries = Dataset(query_path);
 
-    LSH lsh = LSH(dataset, queries, DISCRETE_FRECHET, 2);
+    LSH lsh = LSH(dataset, DISCRETE_FRECHET, 2);
 
     std::cout << "\nRunning LSH with Discrete Frechet distance metric: " << endl
          << "- Input path: " << input_path << endl
          << "- Query path: " << query_path << endl
          << "- Output path: " << out_path << endl;
 
-    lsh.nearest_neighbor(out_path);
+    std::tuple<double, string> result = {std::numeric_limits<double>::max(), "-"};
+    auto query = (*queries.getData())[0];
+    lsh.nearest_neighbor(query, result);
 
     std::cout << "\nGoodbye!" << endl;
 

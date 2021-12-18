@@ -11,7 +11,7 @@ public:
     cluster(std::string &config_path, 
             std::string &out_path,
             Dataset &dataset, 
-            const std::string& assignment, 
+            const std::string &assignment, 
             const std::string &update,
             bool verbose,
             bool evaluation);

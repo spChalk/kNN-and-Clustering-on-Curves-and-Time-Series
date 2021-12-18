@@ -1,20 +1,17 @@
-#include <cmath>
+
 #include <iostream>
+#include <string>
+
 #include "../src/clustering/cluster.hpp"
-#include "../src/util/metrics/metrics.hpp"
+#include "../src/util/utilities.hpp"
 
-using std::endl;
-using std::get;
-using std::ostringstream;
-using std::runtime_error;
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char const *argv[])
+{
+    std::string input_path, config_path, out_path, update_method, assignment_method;
+    bool verbose, silh;
 
-    string input_path, config_path, out_path, method;
-    method = "Classic";
-    bool verbose = false;
-
-    if(input_handle_cluster(argc, argv, &input_path, &config_path, &out_path, &method, &verbose) == -1)
+    if(input_handle_cluster(argc, argv, &input_path, &config_path, &out_path, &update_method, &assignment_method, &silh, &verbose) == -1)
         exit(EXIT_FAILURE);
 
     if(input_path.empty())
@@ -29,14 +26,11 @@ int main(int argc, char const *argv[]) {
     else
         remove(out_path.c_str());
 
-    Dataset dataset = Dataset(input_path);
+    // Dataset *dataset = new Dataset(input_path);  // TODO : Rm pointer
+    Dataset dataset = Dataset(input_path);  // TODO : Rm pointer
 
-    // method = "Hypercube";
-    // method = "LSH";
-    auto c = cluster(config_path, dataset, Metrics::euclidean, method);
-
-    c.perform_clustering();
-    c.write_results_to_file(out_path, verbose);
-
+    std::cout << "Going in " << std::endl;
+    cluster(config_path, out_path, dataset, assignment_method, update_method, verbose, silh);
+    
     return 0;
 }

@@ -15,7 +15,6 @@ normal_vector(new vector<double>()) {
 }
 
 int hash_function::hash(vector<double> *query) {
-
     return floor(dot_product<double>(query, this->normal_vector) + this->noise);
 }
 

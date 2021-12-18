@@ -270,6 +270,9 @@ int input_handle_cluster(int narg, char const *argvect[], string *inf, string *c
         return -1;
     }
 
+    *silhouette = false;
+    *verbose = false;
+
     /* in-line parameters */
     char argI[3] = "-i", argC[3] = "-c", argO[3] = "-o", argComplete[10] = "-complete";
     char argAssign[] = "-assignment", argUpdate[] = "-update", argSil[] = "-silhouette";

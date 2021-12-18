@@ -16,10 +16,10 @@ static auto rnd = std::bind(std::uniform_int_distribution<uint32_t>(0,1),std::re
 void hypercube::set_limits(uint32_t newN, uint32_t newR, uint32_t newM, uint32_t new_probes) {
     this->M = newM; this->probes = new_probes; this->N = newN; this->R = newR;
 }
-// TODO : Test init dim
+
 // Constructor - creates a Hypercube data structure and inserts every record from given dataset.
-hypercube::hypercube(Dataset &dataset, distance_f dist_func, uint32_t k, uint32_t M, uint32_t probes, uint32_t N, uint32_t R)
-: init_dim(dataset.getData()->at(0)->get_data_dimensions()), k(k), dist_func(dist_func)
+hypercube::hypercube(Dataset &dataset, hypercube_dist_func dist_func, uint32_t k, uint32_t M, uint32_t probes, uint32_t N, uint32_t R)
+: init_dim(dataset.getData()->at(0)->get_points()->size()), k(k), dist_func(dist_func)
 {
     this->set_limits(N, R, M, probes);
 
@@ -28,8 +28,8 @@ hypercube::hypercube(Dataset &dataset, distance_f dist_func, uint32_t k, uint32_
     this->bucket_to_vertex_index = new std::unordered_map<uint64_t , int>();
     this->hash_family = new vector<hash_function *>(k);
 
-    auto data = dataset.flatten_data();
-    uint32_t window = estimate_window_size(data, this->dist_func);
+    auto *data = dataset.flatten_data();
+    uint32_t window = 257;
 
     for (uint32_t i = 0; i < k; i++) {  // Create d' LSH-admitting hash functions
         (*(this->hash_family))[i] = new hash_function(window, init_dim);
@@ -37,10 +37,14 @@ hypercube::hypercube(Dataset &dataset, distance_f dist_func, uint32_t k, uint32_
     for (auto point_ptr: *data)
         this->insert_point(point_ptr);  // Insert dataset records
     
-    // delete data;  // TODO: Hopefully this will not invoke item destructors
+    delete data;  // TODO: Hopefully this will not invoke item destructors
 }
 
 hypercube::~hypercube() {
+    for (auto &bucket : *this->hypercube_ht) {
+        for (auto *item : bucket)
+            delete item;  // For Dynamic items (FlattenedCurves)
+    }
     delete this->hypercube_ht;
     delete this->bucket_to_vertex_index;
     for (uint32_t i = 0; i < this->k; i++) {
@@ -148,7 +152,7 @@ void hypercube::range_search(FlattenedCurve *query, std::list<std::tuple<Flatten
 // C denotes the type of the Container storing the Results of the Query
 // T denotes the metric used for bounds check (type of k and R parameters)
 template <typename C, typename T>
-void hypercube::perform_query(FlattenedCurve *query, T metric, distance_f dist_func, C & top_n)
+void hypercube::perform_query(FlattenedCurve *query, T metric, hypercube_dist_func dist_func, C & top_n)
 {
     // Keep explored vertices
     auto vertex_cache = std::unordered_set<uint32_t>();

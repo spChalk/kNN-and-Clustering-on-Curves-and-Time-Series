@@ -1,6 +1,8 @@
 
 #include "cluster_template.hpp"
-
+#include "../util/utilities.hpp"
+#include "./complete_binary_tree.hpp"
+#include <memory>
 using std::tuple;
 using std::stringstream;
 using std::vector;
@@ -73,6 +75,12 @@ void
 internal_cluster<ItemType, DistFunc>::
 assign_exact_lloyds()
 {
+    // TODO : Move this to a function, rm it from assign_pt_to_ctr + add it @ rev ass
+    for (auto *ctr : *centroids) {  // Initialize centroids
+        auto assigned_points = new std::vector<ItemType *>();
+        final_assign->insert( {ctr, assigned_points} );
+    }
+
     for(auto datapoint: *(this->dataset)) {
 
         // Initialize minimum distance to a large value
@@ -87,6 +95,7 @@ assign_exact_lloyds()
                 nearest_centroid = centroid;
             }
         }
+
         // Update assignments structure
         assign_point_to_centroid(datapoint, nearest_centroid, this->final_assign);
     }
@@ -116,7 +125,7 @@ internal_cluster<ItemType, DistFunc>::
 get_min_dist_between_2_centroids()
 {
     // Initialize minimum distance to a large value
-    double min_dist = DBL_MAX, dist;
+    double dist, min_dist = DBL_MAX;
     // Loop efficiently through all centroids and fetch the minimum distance
     for (auto it1 = this->centroids->begin(); it1 != this->centroids->end(); ++it1) {
         for (auto it2 = it1; it2 != this->centroids->end(); ++it2)
@@ -146,7 +155,7 @@ reverse_assignment(C cont)
     // Get initial radius
     double radius = this->get_min_dist_between_2_centroids();
     bool little_ball_updates = false;
-    uint32_t MIN_UNASS_PTS = 87;
+    uint32_t MIN_UNASS_PTS = dataset->size() < 87 ? dataset->size() : 87;
 
     // Perform reverse assignment, doubling the radius in each iteration
     // until the vast majority of points are assigned or most balls get no updates
@@ -159,7 +168,7 @@ reverse_assignment(C cont)
         {
             // Perform a range search with `centroid` as its base
             auto result_list = std::list<std::tuple<ItemType *, double>>();
-            cont->range_search(centroid, result_list);
+            cont->range_search(centroid, result_list);  // TODO : Fix
 
             for (auto &result_tuple : result_list)  // For every point in the range
             {
@@ -289,9 +298,9 @@ initialize_centroids()
 {
     auto data = this->dataset;
     // Pick a random point for initial centroid
-    int index = Distributions::uniform<int>(0, (long)data->size());
-    this->centroids->insert( ItemType(*((*data)[index])) );  // TODO : check this
-                                                             // copy-constructor
+    int index = Distributions::uniform<int>(0, (long)data->size()-1);
+    this->centroids->insert( new ItemType(*(data->at(index))) );
+
      // Write down all the distances computed
      // Map point -> (centroid, distance)
     auto history = std::unordered_multimap<string, tuple<string, double>>();
@@ -318,16 +327,15 @@ initialize_centroids()
 
         // Pick a number uniformly between 0 and 100
         auto uniform_index = Distributions::uniform<double>(0, 100);
-
         // Iterate through the map until the cumulative probability of the
         // visited elements is greater than the selected number
         double cum_prob = 0.0;
         for(auto & prob: probabilities) {
             cum_prob += prob.second;
             if(uniform_index < cum_prob) {
-                centroids->insert(ItemType(*prob.first));  // TODO : Check this 
-                break;              // previously was: copy_point(prob.first)
-            }                       // so we probably need a copy-constructor? 
+                centroids->insert(new ItemType(*prob.first));
+                break;
+            }
         }
     }
 }
@@ -370,32 +378,159 @@ compute_sum_of_squared_distances(unordered_map<ItemType *, double> &distances) {
     return sumsq;
 }
 
+namespace {
+
+    Curve *cbt_post_order(CompleteBinaryTree<Curve> &tree, CBTree_Node node);
+    Curve *get_mean_traversal(Curve &c1, Curve &c2);
+    void get_new_centroid(Curve *centroid, std::vector<Curve *> *pts, Curve **new_centroid);
+    void get_new_centroid(FlattenedCurve *centroid, std::vector<FlattenedCurve *> *pts, FlattenedCurve **new_centroid);
+    Curve *get_mean_of_n_curves(std::vector<Curve *> *n_curves);
+
+
+    uint32_t counter = 0;
+
+    void get_new_centroid(Curve *centroid, std::vector<Curve *> *pts, Curve **new_centroid) {
+        if (pts->size() > 1)
+            *new_centroid = get_mean_of_n_curves(pts);
+        else if (pts->size() == 1)
+            *new_centroid = new Curve(*(pts->at(0)));
+        else
+            *new_centroid = new Curve(*centroid);
+
+        std::cout << "Just created a centroid with dim: " << (*new_centroid)->get_points()->size() 
+        << "points\n" << "Point dimensions are:\n";
+        // for (auto *p : *(*new_centroid)->get_points()) {
+        //     std::cout << p->get_dimensions() << std::endl;
+        // }
+    }
+
+    void get_new_centroid(FlattenedCurve *centroid, std::vector<FlattenedCurve *> *pts, FlattenedCurve **new_centroid) {
+        // Initialize an array of zeros
+        auto result = new vector<double>(centroid->get_data_dimensions(), 0.0);
+        // Compute the mean of all points in the current centroid
+        for(auto & _point: *pts) {
+            vector<double> temp = *(_point->get_coordinates());
+            divide_vector_by_scalar<double>(&temp, pts->size());
+            add_vectors<double>(result, &temp, result);
+        }
+        // Create the new, updated centroid
+        std::string name = std::string("centroid_").append(std::to_string(++counter));
+        *new_centroid = new FlattenedCurve(name, *result);
+        delete result;
+    }
+
+
+    Curve *get_mean_traversal(Curve &c1, Curve &c2)
+    {
+        auto lp = std::list<std::tuple<uint32_t, uint32_t>>();
+        Metrics::Discrete_Frechet::distance(c1, c2);
+        Metrics::Discrete_Frechet::optimal_traversal(c1, c2, lp);
+
+        auto pts = new std::vector<Point *>();
+        for (auto &t : lp)
+        {
+            uint32_t pi = std::get<0>(t);
+            uint32_t qj = std::get<1>(t);
+            auto pi_coord = c1.get_coordinates_of_point(pi);
+            auto qj_coord = c2.get_coordinates_of_point(qj);
+            auto result_coord = std::vector<double>(pi_coord->size());
+            add_vectors(pi_coord, qj_coord, &result_coord);
+            divide_vector_by_scalar(&result_coord, 2);
+            Point *new_point = new Point(result_coord);
+            pts->emplace_back(new_point);
+        }
+
+        std::string name = std::string(c1.get_id()).append("-ctr-").append(c2.get_id());
+        Curve *opt_curve = new Curve(name, pts);
+
+        uint32_t ideal_curve_size = c1.get_points()->size();
+        double prune_thresh = 0.02;
+        while (opt_curve->get_points()->size() > ideal_curve_size)
+        {
+            opt_curve->filter(prune_thresh);
+            opt_curve->min_max_filter();
+            prune_thresh += 0.005;
+        }
+
+        if (opt_curve->get_points()->size() < ideal_curve_size) {
+            opt_curve->apply_padding(ideal_curve_size);
+        }
+
+        return opt_curve;
+    }
+
+    Curve *get_mean_of_n_curves(std::vector<Curve *> *n_curves) {
+        auto *cbt = new CompleteBinaryTree<Curve>(n_curves, n_curves->size());
+        Curve *res = new Curve(*cbt_post_order(*cbt, cbt->get_root()));
+        for (CBTree_Node node = cbt->get_root(); !cbt->is_leaf(node); ++node) {
+            Curve *item = cbt->get_item(node);
+            if (item)
+                delete cbt->get_item(node);  // TODO : test
+        }
+        delete cbt;
+        return res;
+    }
+
+    Curve *cbt_post_order(CompleteBinaryTree<Curve> &tree, CBTree_Node node)
+    {
+        if (tree.is_leaf(node))
+            return tree.get_item(node);
+        
+        Curve *left_item  = cbt_post_order(tree, tree.get_left_child(node));
+        Curve *right_item = nullptr;
+        CBTree_Node right_child = tree.get_right_child(node);
+
+        if (!tree.is_empty(right_child))
+            right_item = cbt_post_order(tree, right_child);
+
+        Curve *ret_val;
+        if (!left_item)
+            ret_val = nullptr;
+        else if (!right_item)
+            ret_val = left_item;
+        else
+            ret_val = get_mean_traversal(*left_item, *right_item);
+
+        tree.set_item(node, ret_val == left_item ? nullptr : ret_val );
+        return ret_val;
+    }
+};
+
+
 // Update function
 // Calculate the mean of all vector points per cluster and update the centroids
 template <typename ItemType, typename DistFunc>
 double
 internal_cluster<ItemType, DistFunc>::
-update_vector()
+update_vector() {
+    this->update();
+}
+
+template <typename ItemType, typename DistFunc>
+double
+internal_cluster<ItemType, DistFunc>::
+update_curve() {
+    this->update();
+}
+
+// Update function
+// Calculate the mean of all vector points per cluster and update the centroids
+template <typename ItemType, typename DistFunc>
+double
+internal_cluster<ItemType, DistFunc>::
+update()
 {
     auto new_centroids = new set<ItemType *>();
     double max_distance_between_centroids = -1.0;
-    uint32_t counter = 0;
+
     // For each centroid
     for(auto & centroid_family: *this->final_assign) {
-
+        std::cout << "Found a centroid " << std::endl;
         auto centroid = centroid_family.first;
         auto points = centroid_family.second;
 
-        // Initialize an array of zeros
-        auto result = new vector<double>(centroid->dimensions, 0.0);
-        // Compute the mean of all points in the current centroid
-        for(auto & _point: *points) {
-            vector<double> temp = *(_point->get_coordinates());
-            divide_vector_by_scalar<double>(&temp, points->size());
-            add_vectors<double>(result, &temp, result);
-        }
-        // Create the new, updated centroid  // TODO : Test this
-        auto new_centroid = new ItemType(string("centroid_").append(std::to_string(++counter)), *result);
+        ItemType *new_centroid;
+        get_new_centroid(centroid, points, &new_centroid);
         new_centroids->insert(new_centroid);
 
         // Get the maximum value from the amount of changes of each centroid
@@ -409,16 +544,6 @@ update_vector()
     this->centroids = new_centroids;
 
     return max_distance_between_centroids;
-}
-
-// Update function
-// Calculate the mean of all vector points per cluster and update the centroids
-template <typename ItemType, typename DistFunc>
-double
-internal_cluster<ItemType, DistFunc>::
-update_curve()
-{
-    return 42.0;
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -438,10 +563,9 @@ perform_clustering()
     auto update_func = this->update_method == 0 ? &internal_cluster<ItemType, DistFunc>::update_vector
                                                 : &internal_cluster<ItemType, DistFunc>::update_curve;
     auto start = GET_CURR_TIME();
-
     this->internal_run(assign_func, update_func);
-    
     auto end = GET_CURR_TIME();
+
     this->time_taken = GET_DURATION(start, end);
 }
 
@@ -452,15 +576,28 @@ internal_cluster<ItemType, DistFunc>::
 internal_run(__CLUSTER_TMPL_MODULE_assign_func assign_f, __CLUSTER_TMPL_MODULE_update_func update_f)
 {
     // Initialize the centroids
+    std::cout << "HERE!" << std::endl;
     this->initialize_centroids();
+    std::cout << "CLUSTERS: " << this->centroids->size() << std::endl;
+
     // While the maximum value from the amount of changes of each centroid
     // is more than a specified threshold, repeat the
     // update and assignment processes
+    int i = 0;
     do {
+        std::cout << "CLUSTERS [centroids aft update]: " << this->centroids->size() << std::endl;
+        std::cout << "CLUSTERS [centroids bef update]: " << this->centroids->size() << std::endl;
+        std::cout << "HERE! " << ++i << std::endl;
         this->delete_assignment();
         ((*this).*assign_f)();
+        std::cout << "CLUSTERS: " << this->final_assign->size() << std::endl;
+        for (auto &cluster : *(this->final_assign)) {
+            auto t = std::get<1>(cluster);
+            std::cout << "Cluster size: " << t->size() << std::endl;
+        }
     }
     while(((*this).*update_f)() > 10);
+    std::cout << "HERE OUT! " << std::endl;
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -508,7 +645,9 @@ evaluate(std::list<double> &result_per_cluster)
             double a = 0;  // Calculate avg distance between points in the same cluster
             for (auto &point2: *assigned_points)
                 a += this->dist_func(*point1, *point2);
-            a /= assigned_points->size();
+            
+            if (assigned_points->size() > 0)
+                a /= assigned_points->size();
 
             // Get second closest centroid/cluster
             ItemType *second_closest_ctr = this->get_2nd_closest_centroid(cluster_centroid, point1);
@@ -522,13 +661,18 @@ evaluate(std::list<double> &result_per_cluster)
             double b = 0;  // Calculate avg distance with points in the 2nd closest cluster
             for (auto point3 : *assigned_points2)
                 b += this->dist_func(*point1, *point3);
-            b /= assigned_points2->size();
+            
+            if (assigned_points2->size() > 0)
+                b /= assigned_points2->size();
 
-            double si = (b - a) / ( a > b ? a : b );  // point's Silh. value
+            double si = 0.0;
+            if (b != 0)
+                si = (b - a) / ( a > b ? a : b );  // point's Silh. value
             s += si;
             overall += si;
         }
-        s /= assigned_points->size();
+        if (assigned_points->size() > 0)
+            s /= assigned_points->size();
         result_per_cluster.push_back(s);
     }
 
@@ -550,6 +694,9 @@ static void write_vec_to_file(std::ofstream &out, std::vector<double> &vec)
     }
 }
 
+static void write_coordinates_to_file(std::ofstream &out, Curve *c);
+static void write_coordinates_to_file(std::ofstream &out, FlattenedCurve *c);
+
 
 template <typename ItemType, typename DistFunc>
 void
@@ -565,24 +712,37 @@ write_results_to_file(const std::string & out_path, bool verbose, bool evalution
     try {
         out.open(out_path, std::ios_base::app);
 
-        // TODO : fix diz
-        // // Algorithm
-        // if (method == 0)
-        //     out << "Algorithm: Lloyds" << endl;
-        // else if (method == 1)
-        //     out << "Algorithm: Range Search LSH" << endl;
-        // else if (method == 2)
-        //     out << "Algorithm: Range Search Hypercube" << endl;
+        // Algorithm
+        std::string descr;
+        if (this->update_method == 0)
+        {
+            if (this->assign_method == 0)
+                descr = "A:Classic U:Mean Vector";
+            else if (this->assign_method == 1)
+                descr = "A:LSH U:Mean Vector";
+            else
+                descr = "A:Hypercube U:Mean Vector";
+        }
+        else
+        {
+            if (this->assign_method == 0)
+                descr = "A:Classic U:Mean Frechet";
+            else
+                descr = "A:LSH Frechet U:Mean Frechet";
+        }
+        out << "Algorithm: " << descr << endl;
+
 
         uint32_t index = 0;
+        std::cout << "CLUSTERS: " << this->final_assign->size() << std::endl;
         for (auto &cluster : *(this->final_assign))
         {
             auto cluster_centroid = std::get<0>(cluster);
             auto assigned_points = std::get<1>(cluster);
             out << "CLUSTER-" << ++index << " {size: " << assigned_points->size() << ", centroid: ";
 
-            auto centroid_coords = cluster_centroid->get_coordinates();
-            write_vec_to_file(out, *centroid_coords);
+            // auto centroid_coords = cluster_centroid->get_coordinates();
+            write_coordinates_to_file(out, cluster_centroid);
             out << "}" << std::endl;
         }
 
@@ -611,27 +771,37 @@ write_results_to_file(const std::string & out_path, bool verbose, bool evalution
             {
                 auto cluster_centroid = std::get<0>(cluster);
                 auto assigned_points = std::get<1>(cluster);
-                out << "CLUSTER-" << ++index << " {centroid: ";
-                auto centroid_coords = cluster_centroid->get_coordinates();
-                write_vec_to_file(out, *centroid_coords);
-
-                for (auto p : *assigned_points)
-                {
-                    auto p_label = p->get_id();
-                    auto p_coords = p->get_coordinates();
-
-                    out << ", " << p_label << ": ";
-                    write_vec_to_file(out, *p_coords);
+                out << "CLUSTER-" << ++index << " {centroid " << index << " : ";
+                for (auto p : *assigned_points) {
+                    out << ", " << p->get_id();
                 }
-                out << "}" << std::endl;
+                out << " ) }" << std::endl;
             }
         }
-
         out.close();
-
     } catch (const ofstream::failure &err) {
         ostringstream msg;
         msg << "Exception during the opening of " << out_path << endl;
         throw runtime_error(msg.str());
     }
 }
+
+static void write_coordinates_to_file(std::ofstream &out, Curve *c)
+{
+    auto *pts = c->get_points();
+    for (auto *p : *pts)
+    {
+        out << " Point( ";
+        write_vec_to_file(out, *(p->get_coordinates()));
+        out << " ) ";
+    }
+}
+
+static void write_coordinates_to_file(std::ofstream &out, FlattenedCurve *c)
+{
+    auto *pts = c->get_coordinates();
+    write_vec_to_file(out, *pts);
+}
+
+template class internal_cluster<FlattenedCurve, flatn_distance_func>;
+template class internal_cluster<Curve, curve_distance_func>;

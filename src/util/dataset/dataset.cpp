@@ -35,3 +35,12 @@ std::vector<FlattenedCurve *> *Dataset::flatten_data() {
     return fl_data;
 }
 
+std::vector<FlattenedCurve *> *Dataset::erase_time_and_flatten_data() {
+    auto fl_data = new std::vector<FlattenedCurve *>();
+    for(auto &curve: *getData()) {
+        curve->erase_time_axis();
+        fl_data->push_back(curve->flatten());
+    }
+    return fl_data;
+}
+

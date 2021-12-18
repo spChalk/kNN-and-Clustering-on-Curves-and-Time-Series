@@ -26,7 +26,7 @@ double Metrics::Euclidean::distance(FlattenedCurve &a, FlattenedCurve &b) {
 
     if(a.get_size() != b.get_size()) {
         std::ostringstream msg;
-        msg << "Exception in 'distance'. Curves do not have the same size." << std::endl;
+        msg << "Exception in 'distance'. FlattenedCurves do not have the same size. size(a) = " << a.get_size() << " size(b) = " << b.get_size() << std::endl;
         throw std::runtime_error(msg.str());
     }
     auto a_coord = *a.get_coordinates();
@@ -43,7 +43,7 @@ double Metrics::Euclidean::distance(Point &a, Point &b) {
 
     if(a.get_dimensions() != b.get_dimensions()) {
         std::ostringstream msg;
-        msg << "Exception in 'distance'. Curves do not have the same size." << std::endl;
+        msg << "Exception in 'distance'. Points do not have the same size. size(a) = " << a.get_dimensions() << " size(b) = " << b.get_dimensions() << std::endl;
         throw std::runtime_error(msg.str());
     }
     auto a_coord = *a.get_coordinates();
@@ -56,29 +56,27 @@ double Metrics::Euclidean::distance(Point &a, Point &b) {
     return sqrt(result);
 }
 
-static double *opt_array = nullptr;
+static double *opt = nullptr;
 
 // TODO: well, gotta test this...
 double Metrics::Discrete_Frechet::distance(Curve &c1, Curve &c2)
 {
     auto &a = *c1.get_points();
     auto &b = *c2.get_points();
+
     uint32_t m1 = a.size();
     uint32_t m2 = b.size();
     
-
-    auto& opt = opt_array;
-
-    if (opt != nullptr)
+    if (opt != nullptr) {
         delete[] opt;
+        opt = nullptr;
+    }
 
     opt = new double[m1 * m2];
 
-    std::shared_ptr<double> shared_good(opt, std::default_delete<double[]>());
-
-
     // Calculate opt for 1st row (index: 0)
     opt[0] = Metrics::Euclidean::distance(*a[0], *b[0]);
+
     auto p1 = a[0];
     for (uint32_t col=1; col != m2; ++col) {
         opt[col] = std::max( Metrics::Euclidean::distance(*p1, *b[col]), opt[col-1] );
@@ -112,21 +110,19 @@ double Metrics::Discrete_Frechet::distance(Curve &c1, Curve &c2)
 
 void Metrics::Discrete_Frechet::optimal_traversal(Curve &c1, Curve &c2, std::list<std::tuple<uint32_t, uint32_t>> &lp)
 {
-    auto& opt = opt_array;
-
     auto &a = *c1.get_points();
     auto &b = *c2.get_points();
     uint32_t m1 = a.size();
     uint32_t m2 = b.size();
 
-    uint32_t p = m1, q = m2;  // TODO : test this - needs tweaking
+    uint32_t p = m1-1, q = m2-1;  // TODO : test this - needs tweaking
     std::tuple<uint32_t, uint32_t> t = std::make_tuple(p, q);
     lp.push_front(t);
 
     while (p && q)
     {
         // TODO : test this - needs tweaking
-        double x = opt[p * m2 + q];
+        double x = opt[(p-1) * m2 + q];
         double y = opt[p * m2 + q-1];
         double z = opt[(p-1)*m2 + q-1];
         uint32_t minIdx = (int) MAX_OF_THREE(x, y, z);
@@ -143,10 +139,16 @@ void Metrics::Discrete_Frechet::optimal_traversal(Curve &c1, Curve &c2, std::lis
         lp.push_front(t);
     }
 
+    while (p != 0)
+        lp.push_front( std::make_tuple(--p, 0) );
+    while (q != 0)
+        lp.push_front( std::make_tuple(0, --q) );
+
     delete[] opt;
+    opt = nullptr;
 }
 
-void Metrics::Discrete_Frechet::clean() { delete[] opt_array; }
+void Metrics::Discrete_Frechet::clean() { if (opt) delete[] opt; }
 
 
 double Metrics::Continuous_Frechet::distance(Curve &c1, Curve &c2) {

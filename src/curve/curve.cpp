@@ -5,10 +5,10 @@
 using std::get;
 
 Curve::Curve(std::string &_id, std::vector<Point *> *_points):
-id(_id), points(_points) {}
+id(_id), points(_points), x_axis_erased(false) {}
 
 Curve::Curve(const Curve &curve):
-id(curve.id), points(new std::vector<Point *>()) {
+id(curve.id), points(new std::vector<Point *>()), x_axis_erased(curve.x_axis_erased) {
 
     for(auto &point: *curve.points)
         points->push_back(new Point(*point->get_coordinates()));
@@ -37,8 +37,11 @@ void Curve::prune_point_on_index(uint32_t index) {
 }
 
 void Curve::erase_time_axis() {
-    for(auto _tuple: *points)
-        remove_first_value_of(_tuple);
+    if (!this->x_axis_erased) {
+        this->x_axis_erased = true;
+        for(auto _tuple: *points)
+            remove_first_value_of(_tuple);
+    }
 }
 
 void Curve::remove_first_value_of(Point *_tuple) {
@@ -86,17 +89,26 @@ void Curve::min_max_filter() {
             prune_point_on_index(i);
 }
 
+std::vector<double> *Curve::get_coordinates() {
+    return this->get_coordinates_of_point(0);
+}
+
+
 std::vector<double> *Curve::get_coordinates_of_point(uint32_t index) {
     assert (index < points->size());
     return (*points)[index]->get_coordinates();
 }
 
 void Curve::apply_padding(uint32_t limit) {
+    uint32_t point_dim = this->points->at(0)->get_dimensions();
     while(points->size() < limit) {
-        auto zero = vector<double>{0};
-        points->push_back(new Point(zero));
+        double pad_value = 1000.0; // std::numeric_limits<double>::max();
+        auto pad_vec = vector<double>(point_dim, pad_value);
+        points->push_back(new Point(pad_vec));
     }
 }
+
+Curve::Curve(std::string &_id, std::vector<double> &first_point):id(_id), points(nullptr) {}
 
 _Curve *Curve::to_FredCurve() {
 
@@ -124,8 +136,8 @@ FlattenedCurve::FlattenedCurve(Curve &normal_curve)
 
 FlattenedCurve::FlattenedCurve(const FlattenedCurve& curve):
 id(curve.id), points(new vector<double>()) {
-    for(auto &coord: *points) {
-        points->push_back(coord);
+    for(auto &coord: *curve.points) {
+        this->points->push_back(coord);
     }
 }
 
@@ -142,6 +154,10 @@ std::vector<double> *FlattenedCurve::get_coordinates() {
 }
 
 uint32_t FlattenedCurve::get_size() {
+    return points->size();
+}
+
+uint32_t FlattenedCurve::get_data_dimensions() {
     return points->size();
 }
 

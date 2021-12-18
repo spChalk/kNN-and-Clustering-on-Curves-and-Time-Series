@@ -20,15 +20,16 @@ class LSH {
 public:
     LSH(Dataset &input, const metrics& metric, uint32_t num_ht = 5, uint32_t num_hfs = 4,
         double radius = 10000);
+    LSH(std::vector<FlattenedCurve *> *data, const enum metrics &_metric, uint32_t num_ht = 5, uint32_t num_hfs = 4,
+         uint32_t _k_nearest = 1, double _radius = 10000);
 
     // Load data into the structure
     void load();
 
     void nearest_neighbor(Curve *query, std::tuple<double, string> &result);
 
-    // Run Range-search
-    template<typename _curve_T>
-    void range_search(_curve_T *query, std::list<tuple<Curve *, double>> &results);
+    void range_search(FlattenedCurve *query, std::list<std::tuple<FlattenedCurve *, double>> & top_n);
+    void range_search(Curve *query, std::list<std::tuple<Curve *, double>> & top_n);
 
     virtual ~LSH();
 
@@ -43,7 +44,7 @@ private:
     // Radius (for range search)
     double radius;
 
-    std::vector<Grid *> *grids;
+    std::vector<Grid *> *grids = nullptr;
 
     // We keep initial inputs here
     std::vector<Curve *> *raw_inputs;
@@ -51,11 +52,11 @@ private:
     uint32_t padding_len;
 
     // We store flattened vectors (for L grids each) here
-    vector_of_flattened_curves *L_flattened_inputs;
-    vector_of_flattened_curves *L_flattened_queries;
+    vector_of_flattened_curves *L_flattened_inputs = nullptr;
+    vector_of_flattened_curves *L_flattened_queries = nullptr;
 
-    std::unordered_map<std::string, Curve *> *label_to_curve;
-    std::unordered_map<std::string, uint32_t> *label_to_index_in_fl_queries;
+    std::unordered_map<std::string, Curve *> *label_to_curve = nullptr;
+    std::unordered_map<std::string, uint32_t> *label_to_index_in_fl_queries = nullptr;
 
     flattened_curves *get_flattened_family(std::string &label);
 
@@ -71,6 +72,10 @@ private:
 
     void nn(flattened_curves &query_family, std::tuple<double, string>& result);
     void _range_search(flattened_curves &query_family, std::list<tuple<Curve *, double>> &results);
+    void _range_search(FlattenedCurve *query, std::list<std::tuple<FlattenedCurve *, double>> & results);
+
+    template<typename _curve_T>
+    void __range_search(_curve_T *query, std::list<tuple<_curve_T *, double>> &results);
 
     void set_metrics_and_preprocess();
 

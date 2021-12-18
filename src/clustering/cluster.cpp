@@ -1,22 +1,12 @@
 
-
-
 #include "cluster.hpp"
 #include "cluster_template.hpp"
 
 #include "../util/dataset/dataset.hpp"
-// #include "../lsh/lsh.hpp"
-// #include "../hypercube/hypercube.hpp"
-#include "../util/utilities.hpp"
+#include "../lsh/lsh.hpp"
+#include "../hypercube/hypercube.hpp"
 #include "../util/files/file_reader.hpp"
 #include "../util/metrics/metrics.hpp"
-
-class hypercube;
-class lsh;  // TODO : Rm diz -> test
-
-
-typedef double(*curve_distance_func)(Curve &, Curve &);
-typedef double(*flatn_distance_func)(FlattenedCurve &, FlattenedCurve &);
 
 /////////////////////////////////////////////////////////////////////
 // Constructor - Destructor(s)
@@ -41,7 +31,6 @@ cluster::cluster(std::string &config_path, std::string &out_path, Dataset &datas
     }
     else if (update == "Mean_Frechet") {
         upd_method = 1;
-        // this->lsh_ds = new LSH(this->dataset.getData(), this->dist_func, _num_of_ht, _num_of_hf);  // TODO : hmm
     }
     else {
         ostringstream msg;
@@ -56,15 +45,12 @@ cluster::cluster(std::string &config_path, std::string &out_path, Dataset &datas
     }
     else if (assignment == "LSH") {
         assignment_method = 1;
-        // this->lsh_ds = new LSH(this->dataset.getData(), this->dist_func, _num_of_ht, _num_of_hf);
     }
     else if (assignment == "LSH_Frechet") {
         assignment_method = 1;
-        // this->lsh_ds = new LSH(this->dataset.getData(), this->dist_func, _num_of_ht, _num_of_hf);  // TODO: hmm
     }
     else if (assignment == "Hypercube") {
         assignment_method = 2;
-        // this->hc_ds = new hypercube(this->dataset, this->dist_func, _num_of_hypercube_dims, _max_num_of_M_hypercube, _num_of_probes);
     }
     else {
         ostringstream msg;
@@ -72,37 +58,54 @@ cluster::cluster(std::string &config_path, std::string &out_path, Dataset &datas
         throw runtime_error(msg.str());
     }
 
+
     if (upd_method == 0)  // Vectors <-> FlattenedCurves
     {
-        std::vector<FlattenedCurve *> *data_to_cluster = dataset.flatten_data();
-        if (assignment_method == 0)  // Classic Lloyd's
-        {
-            auto cluster_obj = internal_cluster<FlattenedCurve, flatn_distance_func>(_num_of_clusters, data_to_cluster, &Metrics::Euclidean::distance, assignment_method, upd_method, nullptr, nullptr);
-            cluster_obj.perform_clustering();
-            cluster_obj.write_results_to_file(out_path, verbose, evaluation);
+        std::vector<FlattenedCurve *> *data_to_cluster = dataset.erase_time_and_flatten_data();
+        internal_cluster<FlattenedCurve, flatn_distance_func> *cluster_obj;
+
+        if (assignment_method == 0) { // Classic Lloyd's
+            cluster_obj = new internal_cluster<FlattenedCurve, flatn_distance_func>(_num_of_clusters, data_to_cluster, &Metrics::Euclidean::distance, assignment_method, upd_method, nullptr, nullptr);
         }
         else if (assignment_method == 1)  // LSH - Initialize for "FlattenedCurve" dataset
         {
-
+            const enum metrics m = EUCLIDEAN;
+            LSH * lsh_container = new LSH(data_to_cluster, m, _num_of_ht, _num_of_hf);
+            cluster_obj = new internal_cluster<FlattenedCurve, flatn_distance_func>(_num_of_clusters, data_to_cluster, &Metrics::Euclidean::distance, assignment_method, upd_method, lsh_container, nullptr);
         }
         else  // Hypercube for "FlattenedCurve" dataset
         {
-
+            hypercube * hc_container = new hypercube(dataset, &Metrics::Euclidean::distance, _num_of_hypercube_dims, _max_num_of_M_hypercube, _num_of_probes);
+            cluster_obj = new internal_cluster<FlattenedCurve, flatn_distance_func>(_num_of_clusters, data_to_cluster, &Metrics::Euclidean::distance, assignment_method, upd_method, nullptr, hc_container);
         }
-        // delete data_to_cluster ?
+        
+        cluster_obj->perform_clustering();
+        cluster_obj->write_results_to_file(out_path, verbose, evaluation);
+        delete cluster_obj;
+
+        for (auto *fc : *data_to_cluster)
+            delete fc;
+        delete data_to_cluster; // TODO: Check dis 
     }
     else  // Curves
     {
         std::vector<Curve *> *data_to_cluster = dataset.getData();
+        internal_cluster<Curve, curve_distance_func> *cluster_obj;
+
         if (assignment_method == 0)  // Classic Lloyd's
         {
-            auto cluster_obj = internal_cluster<Curve, curve_distance_func>(_num_of_clusters, data_to_cluster, &Metrics::Discrete_Frechet::distance, assignment_method, upd_method, nullptr, nullptr);
-            cluster_obj.perform_clustering();
-            cluster_obj.write_results_to_file(out_path, verbose, evaluation);
+            cluster_obj = new internal_cluster<Curve, curve_distance_func>(_num_of_clusters, data_to_cluster, &Metrics::Discrete_Frechet::distance, assignment_method, upd_method, nullptr, nullptr);
         }
         else  // LSH - Initialize for "Curve" dataset
         {
-
+            const enum metrics m = DISCRETE_FRECHET;
+            LSH * lsh_container = new LSH(dataset, m, _num_of_ht, _num_of_hf);
+            cluster_obj = new internal_cluster<Curve, curve_distance_func>(_num_of_clusters, data_to_cluster, &Metrics::Discrete_Frechet::distance, assignment_method, upd_method, lsh_container, nullptr);
         }
+
+        cluster_obj->perform_clustering();
+        cluster_obj->write_results_to_file(out_path, verbose, evaluation);
+        delete cluster_obj;
+        Metrics::Discrete_Frechet::clean();
     }
 }

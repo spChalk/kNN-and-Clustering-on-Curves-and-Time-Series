@@ -23,7 +23,8 @@ public:
             : coordinates(new std::vector<double>(_coord)) {}
 
     ~Point() {
-        delete this->coordinates;
+        if (this->coordinates)
+            delete this->coordinates;
     }
 
     double get_coordinate(uint32_t index) {

@@ -11,6 +11,7 @@ class Curve {
 
 public:
     Curve(std::string &id, std::vector<Point *> *points);
+    Curve(std::string &id, std::vector<double> &first_point);
     Curve(const Curve &curve);
 
     void filter(double pruning_threshold=0.02);
@@ -20,8 +21,9 @@ public:
 
     std::string &get_id();
     std::vector<Point *> *get_points();
+    std::vector<double> *get_coordinates();
     std::vector<double> *get_coordinates_of_point(uint32_t index);
-
+    
     ~Curve();
 
     // TODO REMOVE WHEN READY
@@ -36,6 +38,7 @@ private:
     // Data will consist of a vector consisting of points
     std::vector<Point *> *points;
 
+    bool x_axis_erased;
     bool there_is_available_pruning_on_index(uint32_t index, double pruning_threshold);
     void prune_point_on_index(uint32_t index);
     void remove_first_value_of(Point *_tuple);
@@ -58,6 +61,7 @@ public:
     std::string get_id();
     std::vector<double> *get_coordinates();
     uint32_t get_size();
+    uint32_t get_data_dimensions();
     void apply_padding(uint32_t limit);
 
     _Curve *to_FredCurve();

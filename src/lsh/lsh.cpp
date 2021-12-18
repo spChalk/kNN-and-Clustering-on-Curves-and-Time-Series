@@ -57,6 +57,30 @@ LSH::LSH(Dataset &input, const enum metrics &_metric, uint32_t num_ht, uint32_t 
     this->load();
 }
 
+LSH::LSH(vector<FlattenedCurve *> *data, const enum metrics &_metric, uint32_t num_ht, uint32_t num_hfs,
+         uint32_t _k_nearest, double _radius)
+: maps(new vector< hashtable *>()), metric_id(_metric), radius(_radius) {
+
+    // Automatically compute the window size
+    uint32_t window = WINDOW_SIZE;
+
+    // Get the dimension of the data, by accessing a datapoint
+    uint32_t dim = data->at(0)->get_size();
+    std::cout << "DIM is: " << dim << std::endl;
+
+    for(uint32_t i = 0; i < num_ht; i++) {
+        /* Automatically scale the size of the Hash family's tables by computing:
+            N / 2 ^ (log_10(N) - 1) */
+        uint32_t size = data->size() / (uint32_t)pow(2, (log10((double)data->size()) - 1));
+        this->maps->push_back(new hashtable(size, new amplified_hf(num_hfs, window, dim)));
+    }
+
+    // Load the data into the structure
+    for(auto & map : *this->maps)
+        for(auto pair: *data)
+            map->insert(pair);
+}
+
 // Set the appropriate metrics and preprocess the input data
 void LSH::set_metrics_and_preprocess() {
 
@@ -142,21 +166,25 @@ FlattenedCurve *LSH::discr_frechet_preprocess(Curve &curve, uint32_t index) {
 }
 
 void LSH::delete_flattened_inputs() {
-    for (auto &curve: *L_flattened_inputs) {
-        for (int i = 0; i < curve->size(); i++) {
-            delete curve->data()[i];
+    if (L_flattened_inputs) {
+        for (auto &curve: *L_flattened_inputs) {
+            for (int i = 0; i < curve->size(); i++) {
+                delete curve->data()[i];
+            }
+            delete curve;
         }
-        delete curve;
+        delete L_flattened_inputs;
     }
-    delete L_flattened_inputs;
 
-    for (auto &curve: *L_flattened_queries) {
-        for (int i = 0; i < curve->size(); i++) {
-            delete curve->data()[i];
+    if (L_flattened_queries) {
+        for (auto &curve: *L_flattened_queries) {
+            for (int i = 0; i < curve->size(); i++) {
+                delete curve->data()[i];
+            }
+            delete curve;
         }
-        delete curve;
+        delete L_flattened_queries;
     }
-    delete L_flattened_queries;
 }
 
 LSH::~LSH() {
@@ -166,17 +194,23 @@ LSH::~LSH() {
     this->maps->clear();
     delete this->maps;
 
-    for(auto &grid: *grids)
-        delete grid;
-    delete grids;
+    if (grids) {
+        for(auto &grid: *grids)
+            delete grid;
+        delete grids;
+    }
 
     delete_flattened_inputs();
 
-    label_to_curve->clear();
-    delete label_to_curve;
+    if (label_to_curve) {
+        label_to_curve->clear();
+        delete label_to_curve;
+    }
 
-    label_to_index_in_fl_queries->clear();
-    delete label_to_index_in_fl_queries;
+    if (label_to_index_in_fl_queries) {
+        label_to_index_in_fl_queries->clear();
+        delete label_to_index_in_fl_queries;
+    }
 }
 
 /*
@@ -297,14 +331,71 @@ void LSH::nearest_neighbor(Curve *query, std::tuple<double, string> &result) {
     write_data_to_out_file(avg_lsh_time_taken, abg_brutef_time_taken, maf, out_path);*/
 }
 
+void convert(Curve **init_curve, Curve **new_curve) {
+    *new_curve = *init_curve;
+}
+
+void convert(Curve **init_curve, FlattenedCurve **fc) {
+    *fc = (*init_curve)->flatten();
+}
+
+void LSH::_range_search(FlattenedCurve *query, std::list<std::tuple<FlattenedCurve *, double>> & results) {
+    // Save computed distances
+    auto dist_cache = unordered_map<string, double>();
+    // For every map
+    for(auto & map : *this->maps) {
+        // Find the bucket that the query is hashed into
+        uint32_t id = map->hash(query);
+        uint32_t index = id % map->get_tablesize();
+        auto hashbucket = map->get_bucket(index);
+
+        // For every point in the current bucket
+        for(auto & it : *hashbucket) {
+
+            uint32_t identity = get<0>(*it);
+            FlattenedCurve *p = get<1>(*it);
+            string label = p->get_id();
+
+            /* Check for distances, iff items key is equal to query's amplified hf value */
+            if(id == identity) {
+                // Compute the distance between the query and the current point
+                double dist;
+                if (dist_cache.find(label) == dist_cache.end()) {
+                    dist = Metrics::Euclidean::distance(*query, *p);
+                    dist_cache.insert({label, dist});
+                    if (dist < this->radius)
+                        results.emplace_back(p, dist);
+                }
+            }
+        }
+    }
+}
+
+void LSH::range_search(Curve *query, std::list<std::tuple<Curve *, double>> & top_n) {
+    this->__range_search(query, top_n);
+}
+
+void LSH::range_search(FlattenedCurve *query, std::list<std::tuple<FlattenedCurve *, double>> & top_n) {
+    this->_range_search(query, top_n);
+}
+
 template<typename _curve_T>
-void LSH::range_search(_curve_T *query, list<tuple<Curve *, double>> &results) {
+void LSH::__range_search(_curve_T *query, list<tuple<_curve_T *, double>> &results) {
 
     curve_preprocess(*query, "query");
     auto label = query->get_id();
     // Get the query's flattened family from L_flattened_queries
     auto query_family = get_flattened_family(label);
-    _range_search(*query_family, results);
+    auto results_l = list<tuple<Curve *, double>>();
+    _range_search(*query_family, results_l);
+    for (auto &t : results_l)
+    {
+        Curve *c = std::get<0>(t);
+        double d = std::get<1>(t);
+        _curve_T *converted_type;
+        convert(&c, &converted_type);
+        results.emplace_back(converted_type, d);
+    }
 }
 
 // Run Range-search

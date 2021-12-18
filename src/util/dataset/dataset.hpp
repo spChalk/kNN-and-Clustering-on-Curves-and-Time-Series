@@ -22,6 +22,7 @@ public:
     ~Dataset();
     std::vector<Curve *> *getData() const;
     std::vector<FlattenedCurve *> *flatten_data();
+    std::vector<FlattenedCurve *> *erase_time_and_flatten_data();
     uint32_t size();
 
     // TODO REMOVE IT LATER

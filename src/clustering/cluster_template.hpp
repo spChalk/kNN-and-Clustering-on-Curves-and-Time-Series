@@ -14,16 +14,17 @@
 #include <fstream>
 #include <iomanip>
 #include "../util/dataset/dataset.hpp"
-// #include "../lsh/lsh.hpp"
-// #include "../hypercube/hypercube.hpp"
+#include "../lsh/lsh.hpp"
+#include "../hypercube/hypercube.hpp"
 #include "../util/utilities.hpp"
 #include "../util/files/file_reader.hpp"
-class LSH;
-class hypercube; // TODO : RM diz, testing
 
 using std::set;
 using std::vector;
 using std::unordered_map;
+
+typedef double(*curve_distance_func)(Curve &, Curve &);
+typedef double(*flatn_distance_func)(FlattenedCurve &, FlattenedCurve &);
 
 template <typename ItemType, typename DistFunc>
 class internal_cluster {
@@ -31,7 +32,7 @@ class internal_cluster {
 private:
     // Pointer to assignment function
     typedef void (internal_cluster::*__CLUSTER_TMPL_MODULE_assign_func)();
-    typedef void (internal_cluster::*__CLUSTER_TMPL_MODULE_update_func)();
+    typedef double (internal_cluster::*__CLUSTER_TMPL_MODULE_update_func)();
     
     // Dataset &dataset;
 
@@ -74,6 +75,7 @@ private:
 
     double evaluate(std::list<double> &result_per_cluster);
 
+    double update();
     double update_vector();
     double update_curve();
     double min_distance_from_centroids(ItemType *curr_point,

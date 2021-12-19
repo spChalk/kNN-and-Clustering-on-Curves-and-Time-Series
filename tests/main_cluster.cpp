@@ -26,8 +26,7 @@ int main(int argc, char const *argv[])
     else
         remove(out_path.c_str());
 
-    // Dataset *dataset = new Dataset(input_path);  // TODO : Rm pointer
-    Dataset dataset = Dataset(input_path);  // TODO : Rm pointer
+    Dataset dataset = Dataset(input_path);
 
     std::cout << "Going in " << std::endl;
     cluster(config_path, out_path, dataset, assignment_method, update_method, verbose, silh);

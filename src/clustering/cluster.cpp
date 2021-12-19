@@ -8,8 +8,6 @@
 #include "../util/files/file_reader.hpp"
 #include "../util/metrics/metrics.hpp"
 
-/////////////////////////////////////////////////////////////////////
-// Constructor - Destructor(s)
 
 cluster::cluster(std::string &config_path, std::string &out_path, Dataset &dataset, const std::string& assignment, const std::string &update, bool verbose, bool evaluation)
 {

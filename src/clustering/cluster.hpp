@@ -1,6 +1,6 @@
 
-#ifndef PROJECT_1_CLUSTER_HPP
-#define PROJECT_1_CLUSTER_HPP
+#ifndef PROJECT_2_CLUSTER_HPP
+#define PROJECT_2_CLUSTER_HPP
 
 #include <string>
 #include "../util/dataset/dataset.hpp"
@@ -17,4 +17,4 @@ public:
             bool evaluation);
 };
 
-#endif //PROJECT_1_CLUSTER_HPP
+#endif //PROJECT_2_CLUSTER_HPP

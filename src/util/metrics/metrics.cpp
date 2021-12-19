@@ -58,7 +58,6 @@ double Metrics::Euclidean::distance(Point &a, Point &b) {
 
 static double *opt = nullptr;
 
-// TODO: well, gotta test this...
 double Metrics::Discrete_Frechet::distance(Curve &c1, Curve &c2)
 {
     auto &a = *c1.get_points();

@@ -12,6 +12,8 @@ using std::unordered_multimap;
 using std::set;
 using std::get;
 
+// TODO : Rm couts
+
 /////////////////////////////////////////////////////////////////////
 // Constructor - Destructor(s)
 
@@ -384,14 +386,28 @@ namespace {
     void get_new_centroid(FlattenedCurve *centroid, std::vector<FlattenedCurve *> *pts, FlattenedCurve **new_centroid);
     Curve *get_mean_of_n_curves(std::vector<Curve *> *n_curves);
 
-    double PRUNING_THRESHOLD = 10.0;
+    double PRUNING_THRESHOLD = 0.2;
     uint32_t IDEAL_CURVE_SIZE;
     uint32_t counter = 0;
 
     void get_new_centroid(Curve *centroid, std::vector<Curve *> *pts, Curve **new_centroid) {
         IDEAL_CURVE_SIZE = centroid->get_points()->size();
         if (pts->size() > 1)
-            *new_centroid = get_mean_of_n_curves(pts);
+        {
+            Curve *opt_curve = get_mean_of_n_curves(pts);
+            double prune_thresh = PRUNING_THRESHOLD;
+            while (opt_curve->get_points()->size() > IDEAL_CURVE_SIZE)
+            {
+                opt_curve->filter(prune_thresh);
+                opt_curve->min_max_filter();
+                prune_thresh += 0.5;  // TODO : Tune dis
+            }
+
+            if (opt_curve->get_points()->size() < IDEAL_CURVE_SIZE) {
+                opt_curve->apply_padding(IDEAL_CURVE_SIZE);
+            }
+            *new_centroid = opt_curve;
+        }
         else if (pts->size() == 1)
             *new_centroid = new Curve(*(pts->at(0)));
         else
@@ -436,20 +452,8 @@ namespace {
             pts->emplace_back(new_point);
         }
 
-        std::string name = std::string(c1.get_id()).append("-ctr-").append(c2.get_id());
+        std::string name = std::string("ctr_").append(std::to_string(++counter));
         Curve *opt_curve = new Curve(name, pts);
-
-        double prune_thresh = PRUNING_THRESHOLD;
-        while (opt_curve->get_points()->size() > IDEAL_CURVE_SIZE)
-        {
-            opt_curve->filter(prune_thresh);
-            opt_curve->min_max_filter();
-            prune_thresh += 0.05;  // TODO : Tune dis
-        }
-
-        if (opt_curve->get_points()->size() < IDEAL_CURVE_SIZE) {
-            opt_curve->apply_padding(IDEAL_CURVE_SIZE);
-        }
 
         return opt_curve;
     }

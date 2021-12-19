@@ -95,6 +95,8 @@ void Curve::min_max_filter() {
 }
 
 std::vector<double> *Curve::get_coordinates() {
+    // This function exists for template compatibility
+    throw std::runtime_error("Curve::get_coordinates() called");
     return this->get_coordinates_of_point(0);
 }
 
@@ -113,8 +115,9 @@ void Curve::apply_padding(uint32_t limit) {
     }
 }
 
+// This function exists for template compatibility
 Curve::Curve(std::string &_id, std::vector<double> &first_point)
-:id(_id), points(nullptr) {}
+:id(_id), points(nullptr) { throw std::runtime_error("Curve::get_coordinates() called"); }
 
 _Curve *Curve::to_FredCurve() {
 

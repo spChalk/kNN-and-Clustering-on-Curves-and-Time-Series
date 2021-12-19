@@ -37,7 +37,7 @@ hypercube::hypercube(Dataset &dataset, hypercube_dist_func dist_func, uint32_t k
     for (auto point_ptr: *data)
         this->insert_point(point_ptr);  // Insert dataset records
     
-    delete data;  // TODO: Hopefully this will not invoke item destructors
+    delete data;
 }
 
 hypercube::~hypercube() {

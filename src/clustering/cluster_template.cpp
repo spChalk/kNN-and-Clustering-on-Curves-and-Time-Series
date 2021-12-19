@@ -2,7 +2,7 @@
 #include "cluster_template.hpp"
 #include "../util/utilities.hpp"
 #include "./complete_binary_tree.hpp"
-#include <memory>
+
 using std::tuple;
 using std::stringstream;
 using std::vector;
@@ -75,8 +75,8 @@ void
 internal_cluster<ItemType, DistFunc>::
 assign_exact_lloyds()
 {
-    // TODO : Move this to a function, rm it from assign_pt_to_ctr + add it @ rev ass
-    for (auto *ctr : *centroids) {  // Initialize centroids
+    // Initialize centroid containers
+    for (auto *ctr : *centroids) {
         auto assigned_points = new std::vector<ItemType *>();
         final_assign->insert( {ctr, assigned_points} );
     }
@@ -107,15 +107,7 @@ internal_cluster<ItemType, DistFunc>::
 assign_point_to_centroid(ItemType *pt, ItemType *ctr, std::unordered_map<ItemType *, std::vector<ItemType *> *> *final_assign)
 {
     auto centroid_entry = final_assign->find(ctr);
-
-    // if the centroid has 0 assigned points, initialize its vector
-    if (centroid_entry == final_assign->end()) {
-        auto assigned_points = new std::vector<ItemType *>();
-        assigned_points->push_back(pt);
-        final_assign->insert( {ctr, assigned_points} );
-    }
-    else
-        centroid_entry->second->push_back(pt);
+    centroid_entry->second->push_back(pt);
 }
 
 // Get the minimum distance between 2 centroids
@@ -149,6 +141,12 @@ void
 internal_cluster<ItemType, DistFunc>::
 reverse_assignment(C cont)
 {
+    // Initialize centroids containers
+    for (auto *ctr : *centroids) {
+        auto assigned_points = new std::vector<ItemType *>();
+        final_assign->insert( {ctr, assigned_points} );
+    }
+
     // Insert every point from the dataset vector in the `unassigned_points` set
     auto unassigned_points = std::unordered_set<ItemType *>(dataset->begin(), dataset->end());
 
@@ -168,7 +166,7 @@ reverse_assignment(C cont)
         {
             // Perform a range search with `centroid` as its base
             auto result_list = std::list<std::tuple<ItemType *, double>>();
-            cont->range_search(centroid, result_list);  // TODO : Fix
+            cont->range_search(centroid, result_list);
 
             for (auto &result_tuple : result_list)  // For every point in the range
             {
@@ -386,10 +384,12 @@ namespace {
     void get_new_centroid(FlattenedCurve *centroid, std::vector<FlattenedCurve *> *pts, FlattenedCurve **new_centroid);
     Curve *get_mean_of_n_curves(std::vector<Curve *> *n_curves);
 
-
+    double PRUNING_THRESHOLD = 10.0;
+    uint32_t IDEAL_CURVE_SIZE;
     uint32_t counter = 0;
 
     void get_new_centroid(Curve *centroid, std::vector<Curve *> *pts, Curve **new_centroid) {
+        IDEAL_CURVE_SIZE = centroid->get_points()->size();
         if (pts->size() > 1)
             *new_centroid = get_mean_of_n_curves(pts);
         else if (pts->size() == 1)
@@ -397,11 +397,7 @@ namespace {
         else
             *new_centroid = new Curve(*centroid);
 
-        std::cout << "Just created a centroid with dim: " << (*new_centroid)->get_points()->size() 
-        << "points\n" << "Point dimensions are:\n";
-        // for (auto *p : *(*new_centroid)->get_points()) {
-        //     std::cout << p->get_dimensions() << std::endl;
-        // }
+        std::cout << "Just created a centroid with dim: " << (*new_centroid)->get_points()->size() << " points\n";
     }
 
     void get_new_centroid(FlattenedCurve *centroid, std::vector<FlattenedCurve *> *pts, FlattenedCurve **new_centroid) {
@@ -443,17 +439,16 @@ namespace {
         std::string name = std::string(c1.get_id()).append("-ctr-").append(c2.get_id());
         Curve *opt_curve = new Curve(name, pts);
 
-        uint32_t ideal_curve_size = c1.get_points()->size();
-        double prune_thresh = 0.02;
-        while (opt_curve->get_points()->size() > ideal_curve_size)
+        double prune_thresh = PRUNING_THRESHOLD;
+        while (opt_curve->get_points()->size() > IDEAL_CURVE_SIZE)
         {
             opt_curve->filter(prune_thresh);
             opt_curve->min_max_filter();
-            prune_thresh += 0.005;
+            prune_thresh += 0.05;
         }
 
-        if (opt_curve->get_points()->size() < ideal_curve_size) {
-            opt_curve->apply_padding(ideal_curve_size);
+        if (opt_curve->get_points()->size() < IDEAL_CURVE_SIZE) {
+            opt_curve->apply_padding(IDEAL_CURVE_SIZE);
         }
 
         return opt_curve;
@@ -465,7 +460,7 @@ namespace {
         for (CBTree_Node node = cbt->get_root(); !cbt->is_leaf(node); ++node) {
             Curve *item = cbt->get_item(node);
             if (item)
-                delete cbt->get_item(node);  // TODO : test
+                delete cbt->get_item(node);
         }
         delete cbt;
         return res;
@@ -503,14 +498,14 @@ template <typename ItemType, typename DistFunc>
 double
 internal_cluster<ItemType, DistFunc>::
 update_vector() {
-    this->update();
+    return this->update();
 }
 
 template <typename ItemType, typename DistFunc>
 double
 internal_cluster<ItemType, DistFunc>::
 update_curve() {
-    this->update();
+    return this->update();
 }
 
 // Update function
@@ -576,7 +571,7 @@ internal_cluster<ItemType, DistFunc>::
 internal_run(__CLUSTER_TMPL_MODULE_assign_func assign_f, __CLUSTER_TMPL_MODULE_update_func update_f)
 {
     // Initialize the centroids
-    std::cout << "HERE!" << std::endl;
+    std::cout << "HERE IN! " << std::endl;
     this->initialize_centroids();
     std::cout << "CLUSTERS: " << this->centroids->size() << std::endl;
 
@@ -585,8 +580,6 @@ internal_run(__CLUSTER_TMPL_MODULE_assign_func assign_f, __CLUSTER_TMPL_MODULE_u
     // update and assignment processes
     int i = 0;
     do {
-        std::cout << "CLUSTERS [centroids aft update]: " << this->centroids->size() << std::endl;
-        std::cout << "CLUSTERS [centroids bef update]: " << this->centroids->size() << std::endl;
         std::cout << "HERE! " << ++i << std::endl;
         this->delete_assignment();
         ((*this).*assign_f)();
@@ -717,24 +710,22 @@ write_results_to_file(const std::string & out_path, bool verbose, bool evalution
         if (this->update_method == 0)
         {
             if (this->assign_method == 0)
-                descr = "A:Classic U:Mean Vector";
+                descr = "ASSIGNMENT:Classic UPDATE:Mean Vector";
             else if (this->assign_method == 1)
-                descr = "A:LSH U:Mean Vector";
+                descr = "ASSIGNMENT:LSH UPDATE:Mean Vector";
             else
-                descr = "A:Hypercube U:Mean Vector";
+                descr = "ASSIGNMENT:Hypercube UPDATE:Mean Vector";
         }
         else
         {
             if (this->assign_method == 0)
-                descr = "A:Classic U:Mean Frechet";
+                descr = "ASSIGNMENT:Classic UPDATE:Mean Frechet";
             else
-                descr = "A:LSH Frechet U:Mean Frechet";
+                descr = "ASSIGNMENT:LSH Frechet UPDATE:Mean Frechet";
         }
         out << "Algorithm: " << descr << endl;
 
-
         uint32_t index = 0;
-        std::cout << "CLUSTERS: " << this->final_assign->size() << std::endl;
         for (auto &cluster : *(this->final_assign))
         {
             auto cluster_centroid = std::get<0>(cluster);
@@ -771,11 +762,11 @@ write_results_to_file(const std::string & out_path, bool verbose, bool evalution
             {
                 auto cluster_centroid = std::get<0>(cluster);
                 auto assigned_points = std::get<1>(cluster);
-                out << "CLUSTER-" << ++index << " {centroid " << index << " : ";
+                out << "CLUSTER-" << ++index << " {centroid-" << cluster_centroid->get_id();
                 for (auto p : *assigned_points) {
                     out << ", " << p->get_id();
                 }
-                out << " ) }" << std::endl;
+                out << " }" << std::endl;
             }
         }
         out.close();

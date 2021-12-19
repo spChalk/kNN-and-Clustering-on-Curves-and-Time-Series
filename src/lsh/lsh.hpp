@@ -60,10 +60,8 @@ private:
 
     flattened_curves *get_flattened_family(std::string &label);
 
+    void curve_preprocess(Curve &c, const string &type);
     void curves_preprocess(std::vector<Curve *> &curves, const std::string& type);
-
-    template<typename _curve_T>
-    void curve_preprocess(_curve_T &c, const string &type);
 
     FlattenedCurve *euclidean_preprocess(Curve &curve);
     FlattenedCurve *euclidean_preprocess(FlattenedCurve &curve);
@@ -71,11 +69,6 @@ private:
     FlattenedCurve *discr_frechet_preprocess(Curve &curve, uint32_t index);
 
     void nn(flattened_curves &query_family, std::tuple<double, string>& result);
-    void _range_search(flattened_curves &query_family, std::list<tuple<Curve *, double>> &results);
-    void _range_search(FlattenedCurve *query, std::list<std::tuple<FlattenedCurve *, double>> & results);
-
-    template<typename _curve_T>
-    void __range_search(_curve_T *query, std::list<tuple<_curve_T *, double>> &results);
 
     void set_metrics_and_preprocess();
 

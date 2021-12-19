@@ -103,9 +103,9 @@ double Metrics::Discrete_Frechet::distance(Curve &c1, Curve &c2)
     return ret_val;
 }
 
-#define MAX_OF_THREE(X, Y, Z) { \
-    X > Y ? (X > Z ? 0 : 2) \
-          : (Y > Z ? 1 : 2) \
+#define MIN_OF_THREE(X, Y, Z) { \
+        X < Y ? (X < Z ? 0 : 2) \
+              : (Y < Z ? 1 : 2) \
 }
 
 void Metrics::Discrete_Frechet::optimal_traversal(Curve &c1, Curve &c2, std::list<std::tuple<uint32_t, uint32_t>> &lp)
@@ -115,17 +115,16 @@ void Metrics::Discrete_Frechet::optimal_traversal(Curve &c1, Curve &c2, std::lis
     uint32_t m1 = a.size();
     uint32_t m2 = b.size();
 
-    uint32_t p = m1-1, q = m2-1;  // TODO : test this - needs tweaking
+    uint32_t p = m1-1, q = m2-1;
     std::tuple<uint32_t, uint32_t> t = std::make_tuple(p, q);
     lp.push_front(t);
 
     while (p && q)
     {
-        // TODO : test this - needs tweaking
         double x = opt[(p-1) * m2 + q];
         double y = opt[p * m2 + q-1];
         double z = opt[(p-1)*m2 + q-1];
-        uint32_t minIdx = (int) MAX_OF_THREE(x, y, z);
+        int minIdx = MIN_OF_THREE(x, y, z);
 
         if (minIdx == 0) {
             t = std::make_tuple(--p, q);

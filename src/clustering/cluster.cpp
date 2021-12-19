@@ -85,7 +85,7 @@ cluster::cluster(std::string &config_path, std::string &out_path, Dataset &datas
 
         for (auto *fc : *data_to_cluster)
             delete fc;
-        delete data_to_cluster; // TODO: Check dis 
+        delete data_to_cluster;
     }
     else  // Curves
     {

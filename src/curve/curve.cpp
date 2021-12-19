@@ -49,8 +49,13 @@ void Curve::remove_first_value_of(Point *_tuple) {
     coordinates->erase(coordinates->begin());
 }
 
+uint32_t Curve::get_size() {
+    return points->size();
+}
+
+
 void Curve::print() {
-    std::cout << "Curve: " << id << " | ";
+    std::cout << "Curve: " << id << " |\n";
     for(auto point: *points)
         point->print();
 }
@@ -77,8 +82,8 @@ bool Curve::is_between_min_and_max(uint32_t index) {
     auto point_middle = get_coordinates_of_point(index)[0];
     auto point_right = get_coordinates_of_point(index + 1)[0];
 
-    if(point_middle >= point_left && point_middle <= point_right ||
-        point_middle <= point_left && point_middle >= point_right)
+    if((point_middle >= point_left && point_middle <= point_right) ||
+        (point_middle <= point_left && point_middle >= point_right))
         return true;
     return false;
 }
@@ -102,13 +107,14 @@ std::vector<double> *Curve::get_coordinates_of_point(uint32_t index) {
 void Curve::apply_padding(uint32_t limit) {
     uint32_t point_dim = this->points->at(0)->get_dimensions();
     while(points->size() < limit) {
-        double pad_value = 1000.0; // std::numeric_limits<double>::max();
+        double pad_value = 1000.0; // TODO: TEST std::numeric_limits<double>::max();
         auto pad_vec = vector<double>(point_dim, pad_value);
         points->push_back(new Point(pad_vec));
     }
 }
 
-Curve::Curve(std::string &_id, std::vector<double> &first_point):id(_id), points(nullptr) {}
+Curve::Curve(std::string &_id, std::vector<double> &first_point)
+:id(_id), points(nullptr) {}
 
 _Curve *Curve::to_FredCurve() {
 

@@ -444,7 +444,7 @@ namespace {
         {
             opt_curve->filter(prune_thresh);
             opt_curve->min_max_filter();
-            prune_thresh += 0.05;
+            prune_thresh += 0.05;  // TODO : Tune dis
         }
 
         if (opt_curve->get_points()->size() < IDEAL_CURVE_SIZE) {

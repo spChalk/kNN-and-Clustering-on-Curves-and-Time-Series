@@ -68,11 +68,10 @@ double Metrics::Discrete_Frechet::distance(Curve &c1, Curve &c2)
     uint32_t m2 = b.size();
     
     if (opt != nullptr) {
-        delete[] opt;
-        opt = nullptr;
+        free(opt);
     }
 
-    opt = new double[m1 * m2];
+    opt = (double *) malloc((m1 * m2) * sizeof(double));
 
     // Calculate opt for 1st row (index: 0)
     opt[0] = Metrics::Euclidean::distance(*a[0], *b[0]);
@@ -143,11 +142,11 @@ void Metrics::Discrete_Frechet::optimal_traversal(Curve &c1, Curve &c2, std::lis
     while (q != 0)
         lp.push_front( std::make_tuple(0, --q) );
 
-    delete[] opt;
+    free(opt);
     opt = nullptr;
 }
 
-void Metrics::Discrete_Frechet::clean() { if (opt) delete[] opt; }
+void Metrics::Discrete_Frechet::clean() { if (opt) { free(opt); opt = nullptr; }}
 
 
 double Metrics::Continuous_Frechet::distance(Curve &c1, Curve &c2) {

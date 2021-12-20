@@ -8,7 +8,6 @@
 #include <list>
 #include <map>
 #include <algorithm>
-#include <chrono>
 
 using std::map;
 using std::unordered_map;
@@ -16,9 +15,6 @@ using std::vector;
 using std::list;
 using std::string;
 using std::get;
-
-#define GET_DURATION(START, END) (std::chrono::duration_cast<std::chrono::nanoseconds>((END) - (START)).count() * 1e-9)
-#define GET_CURR_TIME() (std::chrono::high_resolution_clock::now())
 
 #define PRUNING_THRESHOLD (10)
 #define WINDOW_SIZE (1000)

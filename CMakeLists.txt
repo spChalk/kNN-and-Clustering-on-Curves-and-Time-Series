@@ -20,7 +20,7 @@ add_executable(lsh tests/main_lsh.cpp src/util/files/file_reader.cpp src/util/fi
         cont_frechet_repo/Fred/include/frechet.hpp cont_frechet_repo/Fred/src/frechet.cpp
         src/lsh/lsh.cpp src/lsh/lsh.hpp)
 
-add_executable(cube tests/main_hc.cpp src/hypercube/hypercube.cpp src/hypercube/hypercube.hpp src/util/files/file_reader.cpp src/util/files/file_reader.hpp src/util/dataset/dataset.cpp src/util/dataset/dataset.hpp src/lsh/hash_functions/hash_function.cpp src/lsh/hash_functions/hash_function.hpp src/util/utilities.cpp src/util/utilities.hpp src/bruteforce/brute_force_nn.cpp src/bruteforce/brute_force_nn.hpp src/util/metrics/metrics.cpp src/util/metrics/metrics.hpp)
+# add_executable(cube tests/main_hc.cpp src/hypercube/hypercube.cpp src/hypercube/hypercube.hpp src/util/files/file_reader.cpp src/util/files/file_reader.hpp src/util/dataset/dataset.cpp src/util/dataset/dataset.hpp src/lsh/hash_functions/hash_function.cpp src/lsh/hash_functions/hash_function.hpp src/util/utilities.cpp src/util/utilities.hpp src/bruteforce/brute_force_nn.cpp src/bruteforce/brute_force_nn.hpp src/util/metrics/metrics.cpp src/util/metrics/metrics.hpp)
 
 add_executable(unit_tests tests/unit_tests.cpp 
                 src/util/metrics/metrics.cpp

@@ -26,7 +26,6 @@ public:
 
     ~Curve();
 
-    // TODO REMOVE WHEN READY
     void print();
     uint32_t get_size();
     uint32_t get_data_dimensions();

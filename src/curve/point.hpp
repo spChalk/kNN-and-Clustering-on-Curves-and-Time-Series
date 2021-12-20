@@ -40,7 +40,6 @@ public:
         return coordinates->size();
     }
 
-    // TODO REMOVE IT WHEN READY
     void print() {
         std::cout << "( ";
         for(auto i: *coordinates) {

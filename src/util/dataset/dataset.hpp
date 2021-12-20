@@ -25,7 +25,6 @@ public:
     std::vector<FlattenedCurve *> *erase_time_and_flatten_data();
     uint32_t size();
 
-    // TODO REMOVE IT LATER
     void print();
 };
 

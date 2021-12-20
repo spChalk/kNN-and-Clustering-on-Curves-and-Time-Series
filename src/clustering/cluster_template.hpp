@@ -30,12 +30,10 @@ template <typename ItemType, typename DistFunc>
 class internal_cluster {
 
 private:
-    // Pointer to assignment function
-    typedef void (internal_cluster::*__CLUSTER_TMPL_MODULE_assign_func)();
+    // Pointers to assignment, and update functions
+    typedef void   (internal_cluster::*__CLUSTER_TMPL_MODULE_assign_func)();
     typedef double (internal_cluster::*__CLUSTER_TMPL_MODULE_update_func)();
     
-    // Dataset &dataset;
-
     std::vector<ItemType *> *dataset = nullptr;
 
     uint8_t assign_method;  /* 0: Classic, 1: LSH, 2: Hypercube */

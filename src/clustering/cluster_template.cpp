@@ -12,8 +12,6 @@ using std::unordered_multimap;
 using std::set;
 using std::get;
 
-// TODO : Rm couts
-
 /////////////////////////////////////////////////////////////////////
 // Constructor - Destructor(s)
 
@@ -340,7 +338,6 @@ initialize_centroids()
     }
 }
 
-
 /////////////////////////////////////////////////////////////////////
 // UPDATE
 
@@ -380,40 +377,33 @@ compute_sum_of_squared_distances(unordered_map<ItemType *, double> &distances) {
 
 namespace {
 
+    void get_new_centroid(FlattenedCurve *centroid, std::vector<FlattenedCurve *> *pts, FlattenedCurve **new_centroid);
+    void get_new_centroid(Curve *centroid, std::vector<Curve *> *pts, Curve **new_centroid);
     Curve *cbt_post_order(CompleteBinaryTree<Curve> &tree, CBTree_Node node);
     Curve *get_mean_traversal(Curve &c1, Curve &c2);
-    void get_new_centroid(Curve *centroid, std::vector<Curve *> *pts, Curve **new_centroid);
-    void get_new_centroid(FlattenedCurve *centroid, std::vector<FlattenedCurve *> *pts, FlattenedCurve **new_centroid);
     Curve *get_mean_of_n_curves(std::vector<Curve *> *n_curves);
 
-    double PRUNING_THRESHOLD = 0.2;
+    double PRUNING_THRESHOLD = 0.005;
     uint32_t IDEAL_CURVE_SIZE;
     uint32_t counter = 0;
 
     void get_new_centroid(Curve *centroid, std::vector<Curve *> *pts, Curve **new_centroid) {
         IDEAL_CURVE_SIZE = centroid->get_points()->size();
-        if (pts->size() > 1)
-        {
+        if (pts->size() > 1)  // Set the mean of the curves assigned to this centroid
+        {                     // as the new centroid.
             Curve *opt_curve = get_mean_of_n_curves(pts);
             double prune_thresh = PRUNING_THRESHOLD;
             while (opt_curve->get_points()->size() > IDEAL_CURVE_SIZE)
             {
-                opt_curve->filter(prune_thresh);
-                opt_curve->min_max_filter();
-                prune_thresh += 0.5;  // TODO : Tune dis
-            }
-
-            if (opt_curve->get_points()->size() < IDEAL_CURVE_SIZE) {
-                opt_curve->apply_padding(IDEAL_CURVE_SIZE);
+                opt_curve->filter(prune_thresh);    // Reduce the complexity of the new centroid
+                prune_thresh += PRUNING_THRESHOLD;  // from O(n^2) to O(n)
             }
             *new_centroid = opt_curve;
         }
-        else if (pts->size() == 1)
+        else if (pts->size() == 1)  // Just 1 point assigned - set this as the new centroid.
             *new_centroid = new Curve(*(pts->at(0)));
         else
-            *new_centroid = new Curve(*centroid);
-
-        std::cout << "Just created a centroid with dim: " << (*new_centroid)->get_points()->size() << " points\n";
+            *new_centroid = new Curve(*centroid);  // 0 points assigned - don't change the centroid.
     }
 
     void get_new_centroid(FlattenedCurve *centroid, std::vector<FlattenedCurve *> *pts, FlattenedCurve **new_centroid) {
@@ -431,7 +421,6 @@ namespace {
         delete result;
     }
 
-
     Curve *get_mean_traversal(Curve &c1, Curve &c2)
     {
         auto lp = std::list<std::tuple<uint32_t, uint32_t>>();
@@ -440,7 +429,7 @@ namespace {
 
         auto pts = new std::vector<Point *>();
         for (auto &t : lp)
-        {
+        {   // Calculate the mean curve based on the optimal traversal
             uint32_t pi = std::get<0>(t);
             uint32_t qj = std::get<1>(t);
             auto pi_coord = c1.get_coordinates_of_point(pi);
@@ -454,13 +443,13 @@ namespace {
 
         std::string name = std::string("ctr_").append(std::to_string(++counter));
         Curve *opt_curve = new Curve(name, pts);
-
         return opt_curve;
     }
 
     Curve *get_mean_of_n_curves(std::vector<Curve *> *n_curves) {
         auto *cbt = new CompleteBinaryTree<Curve>(n_curves, n_curves->size());
         Curve *res = new Curve(*cbt_post_order(*cbt, cbt->get_root()));
+        // Carefully de-allocate memory
         for (CBTree_Node node = cbt->get_root(); !cbt->is_leaf(node); ++node) {
             Curve *item = cbt->get_item(node);
             if (item)
@@ -496,8 +485,7 @@ namespace {
 };
 
 
-// Update function
-// Calculate the mean of all vector points per cluster and update the centroids
+// Update function is Polymorphic/Generic
 template <typename ItemType, typename DistFunc>
 double
 internal_cluster<ItemType, DistFunc>::
@@ -513,7 +501,7 @@ update_curve() {
 }
 
 // Update function
-// Calculate the mean of all vector points per cluster and update the centroids
+// Calculate the mean of all vector points/curves per cluster and update the centroids
 template <typename ItemType, typename DistFunc>
 double
 internal_cluster<ItemType, DistFunc>::
@@ -524,7 +512,6 @@ update()
 
     // For each centroid
     for(auto & centroid_family: *this->final_assign) {
-        std::cout << "Found a centroid " << std::endl;
         auto centroid = centroid_family.first;
         auto points = centroid_family.second;
 
@@ -575,26 +562,16 @@ internal_cluster<ItemType, DistFunc>::
 internal_run(__CLUSTER_TMPL_MODULE_assign_func assign_f, __CLUSTER_TMPL_MODULE_update_func update_f)
 {
     // Initialize the centroids
-    std::cout << "HERE IN! " << std::endl;
     this->initialize_centroids();
-    std::cout << "CLUSTERS: " << this->centroids->size() << std::endl;
 
     // While the maximum value from the amount of changes of each centroid
     // is more than a specified threshold, repeat the
     // update and assignment processes
-    int i = 0;
     do {
-        std::cout << "HERE! " << ++i << std::endl;
         this->delete_assignment();
         ((*this).*assign_f)();
-        std::cout << "CLUSTERS: " << this->final_assign->size() << std::endl;
-        for (auto &cluster : *(this->final_assign)) {
-            auto t = std::get<1>(cluster);
-            std::cout << "Cluster size: " << t->size() << std::endl;
-        }
     }
     while(((*this).*update_f)() > 10);
-    std::cout << "HERE OUT! " << std::endl;
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -766,7 +743,7 @@ write_results_to_file(const std::string & out_path, bool verbose, bool evalution
             {
                 auto cluster_centroid = std::get<0>(cluster);
                 auto assigned_points = std::get<1>(cluster);
-                out << "CLUSTER-" << ++index << " {centroid-" << cluster_centroid->get_id();
+                out << "CLUSTER-" << ++index << " {centroid-" << index;
                 for (auto p : *assigned_points) {
                     out << ", " << p->get_id();
                 }

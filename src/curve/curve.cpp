@@ -109,7 +109,7 @@ std::vector<double> *Curve::get_coordinates_of_point(uint32_t index) {
 void Curve::apply_padding(uint32_t limit) {
     uint32_t point_dim = this->points->at(0)->get_dimensions();
     while(points->size() < limit) {
-        double pad_value = 1e9; // TODO: TEST std::numeric_limits<double>::max();
+        double pad_value = 1e9;
         auto pad_vec = vector<double>(point_dim, pad_value);
         points->push_back(new Point(pad_vec));
     }

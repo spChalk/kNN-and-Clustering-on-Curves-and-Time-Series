@@ -13,8 +13,8 @@ class CompleteBinaryTree
 {
 private:
     std::vector<ItemType *> *array;
-    uint32_t actual_size;
-    uint32_t last_level_index;
+    uint32_t actual_size;       // Max total items in the CBT
+    uint32_t last_level_index;  // Index of the first leaf
 
 public:
     CompleteBinaryTree(std::vector<ItemType *> *leaves, uint32_t total_leaves)

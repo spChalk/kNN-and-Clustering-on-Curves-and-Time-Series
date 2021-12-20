@@ -28,7 +28,6 @@ int main(int argc, char const *argv[])
 
     Dataset dataset = Dataset(input_path);
 
-    std::cout << "Going in " << std::endl;
     cluster(config_path, out_path, dataset, assignment_method, update_method, verbose, silh);
     
     return 0;

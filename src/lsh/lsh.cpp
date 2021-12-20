@@ -416,6 +416,6 @@ void LSH::range_search(Curve *query, list<tuple<Curve *, double>> &results)
                 }
             }
         }
-        ++i;  // TODO : bruh
+        ++i;
     }
 }

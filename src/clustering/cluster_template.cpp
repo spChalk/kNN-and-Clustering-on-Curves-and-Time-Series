@@ -399,7 +399,7 @@ namespace {
                 prune_thresh += PRUNING_THRESHOLD;  // from O(n^2) to O(n)
             }
             *new_centroid = opt_curve;
-        }
+        }  // Edge cases
         else if (pts->size() == 1)  // Just 1 point assigned - set this as the new centroid.
             *new_centroid = new Curve(*(pts->at(0)));
         else
@@ -713,7 +713,6 @@ write_results_to_file(const std::string & out_path, bool verbose, bool evalution
             auto assigned_points = std::get<1>(cluster);
             out << "CLUSTER-" << ++index << " {size: " << assigned_points->size() << ", centroid: ";
 
-            // auto centroid_coords = cluster_centroid->get_coordinates();
             write_coordinates_to_file(out, cluster_centroid);
             out << "}" << std::endl;
         }

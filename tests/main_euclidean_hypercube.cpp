@@ -1,6 +1,5 @@
-
 #include "../src/util/dataset/dataset.hpp"
-#include "../src/lsh/lsh.hpp"
+#include "../src/hypercube/hypercube.hpp"
 #include "../src/util/metrics/metrics.hpp"
 #include "../src/bruteforce/brute_force_nn.hpp"
 #include "../src/util/files/file_reader.hpp"
@@ -15,16 +14,18 @@ int main(int argc, char const *argv[]) {
 
     std::string input_path = "../data/nasd_input.csv";
     std::string query_path = "../data/nasd_query_small.csv";
-    std::string out_path = "../data/out_discrete.txt";
+    std::string out_path = "../data/out_euclidean.txt";
     auto dataset = Dataset(input_path);
     auto queries = Dataset(query_path);
 
-    LSH lsh = LSH(dataset, CONTINUOUS_FRECHET, 1);  // Must be L=1 !
+    // LSH lsh = LSH(dataset, EUCLIDEAN, 1);
+    hypercube hc = hypercube(dataset, Metrics::Euclidean::distance);  // TODO add args
+        // std::cout << q->get_size() << std::endl;
 
-    std::cout << "\nRunning LSH with Discrete distance metric: " << endl
-         << "- Input path: " << input_path << endl
-         << "- Query path: " << query_path << endl
-         << "- Output path: " << out_path << endl;
+    std::cout << "\nRunning LSH with Euclidean distance metric: " << std::endl
+         << "- Input path: " << input_path << std::endl
+         << "- Query path: " << query_path << std::endl
+         << "- Output path: " << out_path << std::endl;
 
     double avg_lsh_time_taken = 0;
     double abg_brutef_time_taken = 0;
@@ -33,11 +34,12 @@ int main(int argc, char const *argv[]) {
     for(auto query: *queries.getData()) {
 
         string label = query->get_id();
-
+        // query->erase_time_axis();
         // Benchmark LSH K-NN
         auto start = GET_CURR_TIME();
-        std::tuple<double, string> top_lsh = {std::numeric_limits<double>::max(), "-"};
-        lsh.nearest_neighbor(query, top_lsh);
+        auto top_hc = std::multimap<double, std::string>();
+        auto q = query->flatten();
+        hc.knn(q, top_hc);
         auto end = GET_CURR_TIME();
         double lsh_time_taken = GET_DURATION(start, end);
 
@@ -51,15 +53,18 @@ int main(int argc, char const *argv[]) {
         avg_lsh_time_taken += (lsh_time_taken / queries.size());
         abg_brutef_time_taken += (brutef_time_taken / queries.size());
 
-        double candidate_maf = std::get<0>(top_lsh) / std::get<0>(top_brutef);
-        if(std::get<0>(top_lsh) < std::numeric_limits<double>::max() - 10e5 && maf < candidate_maf)
+        double candidate_maf = std::get<0>(*top_hc.begin()) / std::get<0>(top_brutef);
+        if(std::get<0>(*top_hc.begin()) < std::numeric_limits<double>::max() - 10e5 && maf < candidate_maf)
             maf = candidate_maf;
 
-        write_data_to_out_file(label, top_lsh, top_brutef, out_path, "LSH_Continuous_Frechet");
+        std::string name = "Hypercube";
+        // std::tuple<double, string> top_brutef = {top_hc.begin()->first, top_hc.begin()->second};
+        auto p = std::make_tuple( top_hc.begin()->first, top_hc.begin()->second );
+        write_data_to_out_file(label, p, top_brutef, out_path, name);
     }
     write_data_to_out_file(avg_lsh_time_taken, abg_brutef_time_taken, maf, out_path);
 
-    std::cout << "\nGoodbye!" << endl;
+    std::cout << "\nGoodbye!" << std::endl;
 
     return 0;
 }

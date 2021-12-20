@@ -25,8 +25,8 @@ using std::get;
 #define GET_DURATION(START, END) (std::chrono::duration_cast<std::chrono::nanoseconds>((END) - (START)).count() * 1e-9)
 #define GET_CURR_TIME() (std::chrono::high_resolution_clock::now())
 
-#define PRUNING_THRESHOLD 10
-#define WINDOW_SIZE 1000
+#define PRUNING_THRESHOLD (10)
+#define WINDOW_SIZE (1000)
 
 LSH::LSH(Dataset &input, const enum metrics &_metric, uint32_t num_ht, uint32_t num_hfs, double _radius):
         maps(new vector< hashtable *>()),
@@ -106,15 +106,6 @@ void LSH::curves_preprocess(std::vector<Curve *> &curves, const std::string& typ
 }
 
 void LSH::curve_preprocess(Curve &c, const string &type) {
-
-    // If the curve already exists, do not re-insert it.
-    // TODO : Note [Harry] auto to pragma edw fainetai na xalaei th fash otan sou erxontai
-    // gia queries Curves pou exeis dextei sto input dataset
-    // opote trwei comment out mexri neoteras
-    // if(label_to_curve->find(c.get_id()) != label_to_curve->end()){
-    //     std::cout << "hmmmm" << std::endl;
-    //     return;
-    // }
 
     label_to_curve->insert({c.get_id(), &c});
 
@@ -295,43 +286,6 @@ void LSH::nearest_neighbor(Curve *query, std::tuple<double, string> &result) {
 
     // Run NN
     nn(*query_family, result);
-
-
-    /*double avg_lsh_time_taken = 0;
-    double abg_brutef_time_taken = 0;
-    double maf = 0;
-
-    int i = 0;
-    for(auto query_family: *L_flattened_queries) {
-
-        string label = (*query_family)[0]->get_id();
-
-        // Benchmark LSH K-NN
-        auto start = GET_CURR_TIME();
-        std::tuple<double, string> top_lsh = {std::numeric_limits<double>::max(), "-"};
-        nn(*query_family, top_lsh);
-        auto end = GET_CURR_TIME();
-        double lsh_time_taken = GET_DURATION(start, end);
-
-        // Benchmark Brute-force K-NN
-        start = GET_CURR_TIME();
-        std::tuple<double, string> top_brutef = {std::numeric_limits<double>::max(), "-"};
-        bruteforce_nn(*(*raw_queries)[i], raw_inputs, Metrics::Discrete_Frechet::distance, &top_brutef);
-        end = GET_CURR_TIME();
-        auto brutef_time_taken = GET_DURATION(start, end);
-
-        avg_lsh_time_taken += (lsh_time_taken / raw_queries->size());
-        abg_brutef_time_taken += (brutef_time_taken / raw_queries->size());
-
-        double candidate_maf = std::get<0>(top_lsh) / std::get<0>(top_brutef);
-        if(std::get<0>(top_lsh) < std::numeric_limits<double>::max() - 10e5 && maf < candidate_maf)
-            maf = candidate_maf;
-
-        write_data_to_out_file(label, top_lsh, top_brutef, out_path);
-
-        i++;
-    }
-    write_data_to_out_file(avg_lsh_time_taken, abg_brutef_time_taken, maf, out_path);*/
 }
 
 

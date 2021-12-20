@@ -1,4 +1,3 @@
-
 #include "../src/util/dataset/dataset.hpp"
 #include "../src/lsh/lsh.hpp"
 #include "../src/util/metrics/metrics.hpp"
@@ -15,13 +14,13 @@ int main(int argc, char const *argv[]) {
 
     std::string input_path = "../data/nasd_input.csv";
     std::string query_path = "../data/nasd_query_small.csv";
-    std::string out_path = "../data/out_discrete.txt";
+    std::string out_path = "../data/out_euclidean.txt";
     auto dataset = Dataset(input_path);
     auto queries = Dataset(query_path);
 
-    LSH lsh = LSH(dataset, CONTINUOUS_FRECHET, 1);  // Must be L=1 !
+    LSH lsh = LSH(dataset, EUCLIDEAN, 1);
 
-    std::cout << "\nRunning LSH with Discrete distance metric: " << endl
+    std::cout << "\nRunning LSH with Euclidean distance metric: " << endl
          << "- Input path: " << input_path << endl
          << "- Query path: " << query_path << endl
          << "- Output path: " << out_path << endl;
@@ -55,7 +54,7 @@ int main(int argc, char const *argv[]) {
         if(std::get<0>(top_lsh) < std::numeric_limits<double>::max() - 10e5 && maf < candidate_maf)
             maf = candidate_maf;
 
-        write_data_to_out_file(label, top_lsh, top_brutef, out_path, "LSH_Continuous_Frechet");
+        write_data_to_out_file(label, top_lsh, top_brutef, out_path);
     }
     write_data_to_out_file(avg_lsh_time_taken, abg_brutef_time_taken, maf, out_path);
 
@@ -63,4 +62,3 @@ int main(int argc, char const *argv[]) {
 
     return 0;
 }
-

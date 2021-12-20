@@ -17,11 +17,6 @@ using std::list;
 using std::string;
 using std::get;
 
-// TODO: Tune PRUNING_THRESHOLD (tuning threshold is used in time-series' dim. reduction)
-// TODO: Fine-tune grid interval (δ)
-// TODO: See if padding num is good (currently its max len of input data)
-// TODO: Tune WINDOW_SIZE
-
 #define GET_DURATION(START, END) (std::chrono::duration_cast<std::chrono::nanoseconds>((END) - (START)).count() * 1e-9)
 #define GET_CURR_TIME() (std::chrono::high_resolution_clock::now())
 
@@ -91,8 +86,6 @@ void LSH::set_metrics_and_preprocess() {
         for (uint32_t i = 0; i < maps->size(); ++i)
             grids->push_back(new Grid(grid_interval));
 
-        // TODO: WATCH OUT THE CAST! IT IS A POSSIBLE FUTURE SEG
-        // (if you want your cont. frechet to receive flattened curves as args).
         metric = metric_id == CONTINUOUS_FRECHET ? (distance_f)Metrics::Continuous_Frechet::distance :
                  Metrics::Discrete_Frechet::distance;
     }
@@ -151,7 +144,7 @@ FlattenedCurve *LSH::cont_frechet_preprocess(Curve &curve, uint32_t index) {
 }
 
 FlattenedCurve *LSH::discr_frechet_preprocess(Curve &curve, uint32_t index) {
-    auto _curve = Curve(curve);  // TODO : hmm -> was: auto _curve = curve;
+    auto _curve = Curve(curve);
     (*grids)[index]->fit(_curve);
     (*grids)[index]->remove_consecutive_duplicates(_curve);
     auto *flattened_curve = _curve.flatten();

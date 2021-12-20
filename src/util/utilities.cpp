@@ -312,3 +312,60 @@ int input_handle_cluster(int narg, char const *argvect[], string *inf, string *c
     }
     return 0;
 }
+
+
+// Fully handles the Hypercube input provided to the app
+int input_handle_search(int narg, char const *argvect[], string *inf, string *qf, string *outf, uint32_t *L, double *delta, uint32_t *k_LSH, uint32_t *k_HC, uint32_t *M, uint32_t *probes, std::string *algo, std::string *metr) {
+
+    if(narg == 0) return 0;
+
+    /* Correct number of arguments check */
+    if (narg > 17 || narg % 2 == 0) {
+        cout << "Usage: ./search –i <input file> –q <query file> -L <int> –k <int> -M <int> -probes <int> -ο <output file> " <<
+        "-algorithm <LSH or Hypercube or Frechet> -metric <discrete or continuous | only for –algorithm Frechet> -delta <double>" << endl;
+        return -1;
+    }
+
+    /* in-line parameters */
+    char argI[3] = "-i", argQ[3] = "-q", argO[3] = "-o", argK[3] = "-k", argM[3] = "-M";
+    char argAlgo[] = "-algorithm", argDelta[] = "-delta", argMetric[] = "-metric",  argL[3] = "-L";
+    char argProbes[8] = "-probes";
+
+    /* Check if the in-line parameters are being written */
+    for(int i = 1; i < narg; i += 2) {
+
+        if (strcmp(argvect[i], argI) == 0 && is_uint(argvect[i + 1]) == false) {
+            *inf = argvect[i + 1];
+        }
+        else if (strcmp(argvect[i], argQ) == 0 && is_uint(argvect[i + 1]) == false) {
+            *qf = argvect[i + 1];
+        }
+        else if (strcmp(argvect[i], argAlgo) == 0 && is_uint(argvect[i + 1]) == false) {
+            *algo = argvect[i + 1];
+        }
+        else if (strcmp(argvect[i], argMetric) == 0 && is_uint(argvect[i + 1]) == false) {
+            *metr = argvect[i + 1];
+        }
+        else if (strcmp(argvect[i], argDelta) == 0 && is_uint(argvect[i + 1]) == false) {
+            *delta = (int)strtol(argvect[i + 1], nullptr, 10);
+        }
+        else if (strcmp(argvect[i], argO) == 0 && is_uint(argvect[i + 1]) == false) {
+            *outf = argvect[i + 1];
+        }
+        else if (strcmp(argvect[i], argK) == 0 && is_uint(argvect[i + 1])) {
+            *k_LSH = (int)strtol(argvect[i + 1], nullptr, 10);
+            *k_HC = *k_LSH;
+        }
+        else if (strcmp(argvect[i], argM) == 0 && is_uint(argvect[i + 1])) {
+            *M = (int)strtol(argvect[i + 1], nullptr, 10);
+        }
+        else if (strcmp(argvect[i], argL) == 0 && is_uint(argvect[i + 1])) {
+            *L = (int)strtol(argvect[i + 1], nullptr, 10);
+        }
+        else if (strcmp(argvect[i], argProbes) == 0 && is_uint(argvect[i + 1])) {
+            *probes = (int)strtol(argvect[i + 1], nullptr, 10);
+        }
+    }
+
+    return 0;
+}

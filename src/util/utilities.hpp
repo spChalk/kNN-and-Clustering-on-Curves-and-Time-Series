@@ -142,6 +142,9 @@ int input_handle_hypercube(int narg, char const *argvect[], string *inf, string 
 // Fully handles the Cluster input provided to the app
 int input_handle_cluster(int narg, char const *argvect[], string *inf, string *cf, string *outf, string *update, string *assignment, bool *silhouette, bool *verbose);
 
+int input_handle_search(int narg, char const *argvect[], string *inf, string *qf, string *outf, uint32_t *L, double *delta, uint32_t *k_LSH, uint32_t *k_HC, uint32_t *M, uint32_t *probes, std::string *algo, std::string *metr);
+
+
 void apply_floor_to_vector(vector<double> *v);
 
 #endif //PROJECT_1_UTILITIES_HPP
